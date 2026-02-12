@@ -1,14 +1,11 @@
 import { Routes, Route } from "react-router-dom"
 
-import { ComponentExample } from "@/components/component-example"
-import { Layout } from "@/components/layout"
+import { LandingPage } from "@/components/landing-page"
 
 export function App() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<ComponentExample />} />
-      </Route>
+      <Route path="/" element={<LandingPage />} />
     </Routes>
   )
 }
