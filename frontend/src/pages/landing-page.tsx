@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/theme-toggle"
 import {
   IconBook,
   IconBrain,
@@ -26,42 +25,14 @@ import { useNavigate } from "react-router-dom"
 export function LandingPage() {
   const navigate = useNavigate()
 
-  const handleSignIn = () => {
-    navigate("/login")
+  const handleSignUp = () => {
+    navigate("/signup")
   }
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
-                <IconBrain className="size-5 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-semibold">Learnify</span>
-            </div>
-
-            <div className="hidden items-center gap-8 md:flex">
-              <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
-              <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-              <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
-              <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={handleSignIn}>
-                Sign In
-              </Button>
-              <Button size="sm" onClick={() => navigate("/signup")}>Sign Up</Button>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-32">
+      <section className="relative overflow-hidden pt-20 pb-20 lg:pt-32 lg:pb-32">
         {/* Background gradient */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent" />
@@ -86,7 +57,7 @@ export function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" className="gap-2">
+              <Button size="lg" className="gap-2" onClick={handleSignUp}>
                 Start Learning Free
                 <IconArrowRight className="size-4" />
               </Button>
@@ -289,7 +260,7 @@ export function LandingPage() {
                 AI-powered platform. Start your journey today.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button size="lg" variant="secondary" className="gap-2">
+                <Button size="lg" variant="secondary" className="gap-2" onClick={handleSignUp}>
                   Get Started Free
                   <IconArrowRight className="size-4" />
                 </Button>
@@ -301,51 +272,6 @@ export function LandingPage() {
           </Card>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-12">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
-                  <IconBrain className="size-5 text-primary-foreground" />
-                </div>
-                <span className="text-lg font-semibold">Learnify</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Empowering learners worldwide with AI-driven education.
-              </p>
-            </div>
-
-            {footerLinks.map((section, index) => (
-              <div key={index}>
-                <h4 className="font-semibold mb-3">{section.title}</h4>
-                <ul className="space-y-2">
-                  {section.links.map((link, i) => (
-                    <li key={i}>
-                      <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        {link}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <div className="border-t border-border pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              © 2024 Learnify. All rights reserved.
-            </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-              <a href="#" className="hover:text-foreground transition-colors">Cookies</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
@@ -374,7 +300,7 @@ const features = [
   {
     icon: IconBook,
     title: "Curated Curriculum",
-    description: "Expert-designed learning paths that adapt to your pace and learning style.",
+    description: "Expert designed learning paths that adapt to your pace and learning style.",
   },
   {
     icon: IconSparkles,
@@ -401,20 +327,5 @@ const testimonials = [
     name: "Emily Rodriguez",
     role: "UX Designer",
     initials: "ER",
-  },
-]
-
-const footerLinks = [
-  {
-    title: "Product",
-    links: ["Features", "Pricing", "Integrations", "Changelog"],
-  },
-  {
-    title: "Resources",
-    links: ["Documentation", "Tutorials", "Blog", "Community"],
-  },
-  {
-    title: "Company",
-    links: ["About", "Careers", "Press", "Contact"],
   },
 ]
