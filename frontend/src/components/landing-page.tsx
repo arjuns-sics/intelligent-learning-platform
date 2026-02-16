@@ -17,12 +17,18 @@ import {
   IconRocket,
   IconSparkles,
   IconArrowRight,
-  IconCheck,
   IconPlayerPlay,
   IconStar,
 } from "@tabler/icons-react"
 
+import { useNavigate } from "react-router-dom"
+
 export function LandingPage() {
+  const navigate = useNavigate()
+
+  const handleSignIn = () => {
+    navigate("/login")
+  }
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -44,8 +50,10 @@ export function LandingPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm">Sign In</Button>
-              <Button size="sm">Get Started</Button>
+              <Button variant="ghost" size="sm" onClick={handleSignIn}>
+                Sign In
+              </Button>
+              <Button size="sm" onClick={() => navigate("/signup")}>Sign Up</Button>
               <ThemeToggle />
             </div>
           </div>
@@ -56,8 +64,8 @@ export function LandingPage() {
       <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-32">
         {/* Background gradient */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/10 rounded-full blur-3xl opacity-30" />
+          <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-200 h-150 bg-primary/10 rounded-full blur-3xl opacity-30" />
         </div>
 
         <div className="mx-auto max-w-7xl px-6">
@@ -95,7 +103,7 @@ export function LandingPage() {
                   {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className="size-8 rounded-full bg-gradient-to-br from-primary/80 to-primary border-2 border-background"
+                      className="size-8 rounded-full bg-linear-to-br from-primary/80 to-primary border-2 border-background"
                     />
                   ))}
                 </div>
@@ -112,14 +120,14 @@ export function LandingPage() {
 
           {/* Hero Image/Preview */}
           <div className="mt-16 relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent z-10 pointer-events-none" />
             <div className="rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/50">
                 <div className="size-3 rounded-full bg-destructive/60" />
                 <div className="size-3 rounded-full bg-yellow-500/60" />
                 <div className="size-3 rounded-full bg-green-500/60" />
               </div>
-              <div className="aspect-[16/9] bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+              <div className="aspect-video bg-linear-to-br from-muted to-muted/50 flex items-center justify-center">
                 <div className="text-center p-8">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
                     <IconBook className="size-8 text-primary" />
@@ -252,7 +260,7 @@ export function LandingPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-full bg-gradient-to-br from-primary/60 to-primary flex items-center justify-center text-primary-foreground font-semibold">
+                    <div className="size-10 rounded-full bg-linear-to-br from-primary/60 to-primary flex items-center justify-center text-primary-foreground font-semibold">
                       {testimonial.initials}
                     </div>
                     <div>
@@ -270,7 +278,7 @@ export function LandingPage() {
       {/* CTA Section */}
       <section className="py-24">
         <div className="mx-auto max-w-7xl px-6">
-          <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-0 overflow-hidden relative">
+          <Card className="bg-linear-to-br from-primary to-primary/80 text-primary-foreground border-0 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
             <CardContent className="relative z-10 py-16 text-center">
               <h2 className="text-3xl sm:text-4xl font-bold mb-4">
