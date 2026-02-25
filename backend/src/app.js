@@ -9,7 +9,7 @@ const { validateEnv } = require("./middleware/envValidator")
 const app = express()
 
 // Validate environment variables first
-validateEnv()
+app.use(validateEnv)
 
 // Security middleware
 
@@ -28,8 +28,8 @@ app.use(helmet({
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" 
-      ? process.env.CORS_ORIGIN || false 
+    origin: process.env.NODE_ENV === "production"
+      ? process.env.CORS_ORIGIN || false
       : ["http://localhost:5173", "http://localhost:3000"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -44,7 +44,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }))
 // Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now()
-  
+
   res.on("finish", () => {
     const duration = Date.now() - start
     const log = {
@@ -55,13 +55,13 @@ app.use((req, res, next) => {
       ip: req.ip || req.connection?.remoteAddress,
       userAgent: req.get("user-agent") || "unknown",
     }
-    
+
     // Log in development
     if (process.env.NODE_ENV !== "production") {
       console.log(JSON.stringify(log))
     }
   })
-  
+
   next()
 })
 

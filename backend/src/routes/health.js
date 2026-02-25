@@ -13,11 +13,11 @@ let lastCheckTime = null
 router.get("/", async (req, res, next) => {
   try {
     const startTime = Date.now()
-    
+
     // Check database connection
     let dbStatus = "disconnected"
     let dbLatency = null
-    
+
     if (mongoose.connection.readyState === 1) {
       const dbStartTime = Date.now()
       await mongoose.connection.db.admin().ping()
@@ -39,8 +39,6 @@ router.get("/", async (req, res, next) => {
       dependencies: {
         database: {
           status: dbStatus,
-          latency: dbLatency ? `${dbLatency}ms` : null,
-          host: mongoose.connection.host || null,
           name: mongoose.connection.name || null,
         },
       },
@@ -83,7 +81,7 @@ router.get("/live", (req, res) => {
 router.get("/ready", async (req, res) => {
   try {
     const isDbReady = mongoose.connection.readyState === 1
-    
+
     if (isDbReady) {
       res.status(200).json({
         status: "ready",
