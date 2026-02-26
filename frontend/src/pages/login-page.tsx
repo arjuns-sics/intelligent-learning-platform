@@ -10,18 +10,40 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { IconLock, IconMail, IconArrowRight } from "@tabler/icons-react";
-import { Link } from "react-router-dom";
+import { IconLock, IconMail, IconArrowRight, IconLoader2, IconAlertCircle } from "@tabler/icons-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks";
 
 export function LoginPage() {
+  const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [userType, setUserType] = useState<"learner" | "educator" | "admin">("learner");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    navigate("/dashboard", { replace: true });
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log("Login submitted:", { email, password, userType });
+    setError(null);
+    setIsLoading(true);
+
+    const result = await login({ email, password });
+
+    if (result.success) {
+      navigate("/dashboard", { replace: true });
+    } else {
+      setError(result.error || "Login failed. Please try again.");
+    }
+
+    setIsLoading(false);
   };
 
   return (
@@ -104,9 +126,25 @@ export function LoginPage() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full gap-2">
-              Sign In
-              <IconArrowRight className="size-4" />
+            {error && (
+              <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                <IconAlertCircle className="size-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <IconLoader2 className="size-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <IconArrowRight className="size-4" />
+                </>
+              )}
             </Button>
           </form>
 

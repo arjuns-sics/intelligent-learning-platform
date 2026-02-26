@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useNavigate } from "react-router-dom";
@@ -10,10 +10,34 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from "@/components/ui/breadcrumb";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks";
+import { 
+  IconUser, 
+  IconSettings, 
+  IconLogout, 
+  IconDashboard, 
+  IconChevronDown,
+  IconBook,
+  IconUsers,
+  IconChartBar,
+  IconSchool,
+  IconCertificate,
+  IconPlus
+} from "@tabler/icons-react";
 
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, user, role, logout } = useAuth();
 
   const handleSignIn = () => {
     navigate("/login");
@@ -21,6 +45,23 @@ export function Layout() {
 
   const handleSignUp = () => {
     navigate("/signup");
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  // Get role badge variant
+  const getRoleBadgeVariant = () => {
+    switch (role) {
+      case "Admin":
+        return "destructive";
+      case "Instructor":
+        return "default";
+      case "Student":
+      default:
+        return "secondary";
+    }
   };
 
   return (
@@ -52,53 +93,172 @@ export function Layout() {
             </div>
 
             <div className="hidden items-center gap-8 md:flex">
-              <a href="/" className={`text-sm ${location.pathname === "/" ? "text-primary" : "text-muted-foreground"} hover:text-foreground transition-colors`}>Home</a>
-              <a href="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
-              <a href="/#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-              <a href="/#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
-              <a href="/#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+              {isAuthenticated ? (
+                // Role-based navigation
+                role === "Instructor" || role === "Admin" ? (
+                  // Instructor/Admin navigation
+                  <>
+                    <Link to="/dashboard" className={`text-sm flex items-center gap-1.5 ${location.pathname === "/dashboard" ? "text-primary font-medium" : "text-muted-foreground"} hover:text-foreground transition-colors`}>
+                      <IconSchool className="size-4" />
+                      Dashboard
+                    </Link>
+                    <a href="#" className="text-sm flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                      <IconBook className="size-4" />
+                      My Courses
+                    </a>
+                    <a href="#" className="text-sm flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                      <IconUsers className="size-4" />
+                      Students
+                    </a>
+                    <a href="#" className="text-sm flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                      <IconChartBar className="size-4" />
+                      Analytics
+                    </a>
+                    <a href="#" className="text-sm flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                      <IconCertificate className="size-4" />
+                      Certificates
+                    </a>
+                  </>
+                ) : (
+                  // Student navigation
+                  <>
+                    <Link to="/dashboard" className={`text-sm ${location.pathname === "/dashboard" ? "text-primary font-medium" : "text-muted-foreground"} hover:text-foreground transition-colors`}>
+                      Dashboard
+                    </Link>
+                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Courses</a>
+                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Progress</a>
+                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Certificates</a>
+                  </>
+                )
+              ) : (
+                // Public navigation
+                <>
+                  <a href="/" className={`text-sm ${location.pathname === "/" ? "text-primary" : "text-muted-foreground"} hover:text-foreground transition-colors`}>Home</a>
+                  <a href="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
+                  <a href="/#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
+                  <a href="/#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Testimonials</a>
+                  <a href="/#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+                </>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={handleSignIn}>
-                Sign In
-              </Button>
-              <Button size="sm" onClick={handleSignUp}>Sign Up</Button>
-              <ThemeToggle />
+              {isAuthenticated ? (
+                // Authenticated user menu
+                <>
+                  {/* Quick action button for instructors */}
+                  {(role === "Instructor" || role === "Admin") && (
+                    <Button size="sm" asChild className="hidden sm:inline-flex">
+                      <Link to="/courses/create">
+                        <IconPlus className="size-4 mr-1" />
+                        New Course
+                      </Link>
+                    </Button>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                          {user?.profile_image ? (
+                            <img src={user.profile_image} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-medium text-primary">{user?.name?.charAt(0)?.toUpperCase() || "U"}</span>
+                          )}
+                        </div>
+                        <span className="hidden sm:inline max-w-24 truncate">{user?.name}</span>
+                        {role && (
+                          <Badge variant={getRoleBadgeVariant()} className="text-xs hidden lg:inline-flex">
+                            {role}
+                          </Badge>
+                        )}
+                        <IconChevronDown className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">{user?.name}</p>
+                          <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/dashboard" className="cursor-pointer">
+                          <IconDashboard className="mr-2 size-4" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile" className="cursor-pointer">
+                          <IconUser className="mr-2 size-4" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/settings" className="cursor-pointer">
+                          <IconSettings className="mr-2 size-4" />
+                          Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
+                        <IconLogout className="mr-2 size-4" />
+                        Logout
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <ThemeToggle />
+                </>
+              ) : (
+                // Public auth buttons
+                <>
+                  <Button variant="ghost" size="sm" onClick={handleSignIn}>
+                    Sign In
+                  </Button>
+                  <Button size="sm" onClick={handleSignUp}>Sign Up</Button>
+                  <ThemeToggle />
+                </>
+              )}
             </div>
           </div>
         </div>
       </nav>
 
       {/* Breadcrumbs */}
-      {location.pathname !== "/" && (
+      {location.pathname !== "/" && location.pathname !== "/dashboard" && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                <BreadcrumbLink asChild>
+                  <Link to={isAuthenticated ? "/dashboard" : "/"}>Home</Link>
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               {location.pathname === "/login" && (
-                <>
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Login</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Login</BreadcrumbPage>
+                </BreadcrumbItem>
               )}
               {location.pathname === "/signup" && (
-                <>
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Sign Up</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Sign Up</BreadcrumbPage>
+                </BreadcrumbItem>
               )}
               {location.pathname === "/forgot-password" && (
-                <>
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Forgot Password</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Forgot Password</BreadcrumbPage>
+                </BreadcrumbItem>
+              )}
+              {location.pathname === "/profile" && (
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Profile</BreadcrumbPage>
+                </BreadcrumbItem>
+              )}
+              {location.pathname === "/settings" && (
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Settings</BreadcrumbPage>
+                </BreadcrumbItem>
               )}
             </BreadcrumbList>
           </Breadcrumb>

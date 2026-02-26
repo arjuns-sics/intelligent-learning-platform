@@ -10,19 +10,59 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { IconUserPlus, IconMail, IconLock, IconArrowRight } from "@tabler/icons-react";
-import { Link } from "react-router-dom";
+import { IconUserPlus, IconMail, IconLock, IconArrowRight, IconLoader2, IconAlertCircle } from "@tabler/icons-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks";
 
 export function SignupPage() {
+    const navigate = useNavigate();
+    const { register, isAuthenticated } = useAuth();
+
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [userType, setUserType] = useState<"learner" | "educator" | "admin">("learner");
+    const [userType, setUserType] = useState<"Student" | "Instructor" | "Admin">("Student");
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Redirect if already authenticated
+    if (isAuthenticated) {
+        navigate("/dashboard", { replace: true });
+        return null;
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle signup logic here
-        console.log("Signup submitted:", { email, password, confirmPassword, userType });
+        setError(null);
+
+        // Client-side validation
+        if (password !== confirmPassword) {
+            setError("Passwords do not match");
+            return;
+        }
+
+        if (password.length < 6) {
+            setError("Password must be at least 6 characters long");
+            return;
+        }
+
+        setIsLoading(true);
+
+        const result = await register({
+            name,
+            email,
+            password,
+            role: userType,
+        });
+
+        if (result.success) {
+            navigate("/dashboard", { replace: true });
+        } else {
+            setError(result.error || "Registration failed. Please try again.");
+        }
+
+        setIsLoading(false);
     };
 
     return (
@@ -45,6 +85,22 @@ export function SignupPage() {
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
+                            <Label htmlFor="name">Full Name</Label>
+                            <div className="relative">
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    placeholder="John Doe"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                    className="pl-9"
+                                />
+                                <IconUserPlus className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground size-4" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
                             <div className="relative">
                                 <Input
@@ -66,10 +122,11 @@ export function SignupPage() {
                                 <Input
                                     id="password"
                                     type="password"
-                                    placeholder="••••"
+                                    placeholder="••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
+                                    minLength={6}
                                     className="pl-9"
                                 />
                                 <IconLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground size-4" />
@@ -82,10 +139,11 @@ export function SignupPage() {
                                 <Input
                                     id="confirm-password"
                                     type="password"
-                                    placeholder="••••"
+                                    placeholder="••••••"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
+                                    minLength={6}
                                     className="pl-9"
                                 />
                                 <IconLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground size-4" />
@@ -94,14 +152,14 @@ export function SignupPage() {
 
                         <div className="space-y-2">
                             <Label htmlFor="user-type">Account Type</Label>
-                            <Select value={userType} onValueChange={(value: "learner" | "educator" | "admin") => setUserType(value)}>
+                            <Select value={userType} onValueChange={(value: "Student" | "Instructor" | "Admin") => setUserType(value)}>
                                 <SelectTrigger id="user-type" className="w-full">
                                     <SelectValue placeholder="Select your account type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="learner">Learner / Student</SelectItem>
-                                    <SelectItem value="educator">Educator / Teacher</SelectItem>
-                                    <SelectItem value="admin">Administrator</SelectItem>
+                                    <SelectItem value="Student">Learner / Student</SelectItem>
+                                    <SelectItem value="Instructor">Educator / Teacher</SelectItem>
+                                    <SelectItem value="Admin">Administrator</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -111,15 +169,32 @@ export function SignupPage() {
                                 id="terms"
                                 type="checkbox"
                                 className="size-4 rounded border-input bg-background"
+                                required
                             />
                             <Label htmlFor="terms" className="text-xs">
                                 I agree to the <Link to="#" className="text-primary hover:underline">Terms of Service</Link> and <Link to="#" className="text-primary hover:underline">Privacy Policy</Link>
                             </Label>
                         </div>
 
-                        <Button type="submit" className="w-full gap-2">
-                            Create Account
-                            <IconArrowRight className="size-4" />
+                        {error && (
+                            <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                                <IconAlertCircle className="size-4 shrink-0" />
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+                            {isLoading ? (
+                                <>
+                                    <IconLoader2 className="size-4 animate-spin" />
+                                    Creating account...
+                                </>
+                            ) : (
+                                <>
+                                    Create Account
+                                    <IconArrowRight className="size-4" />
+                                </>
+                            )}
                         </Button>
                     </form>
 

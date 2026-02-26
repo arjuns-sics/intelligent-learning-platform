@@ -44,3 +44,6 @@ export function useApiMutation<T, U>(url: string, method: "POST" | "PUT" | "DELE
 }
 
 export { fetcher }
+
+// Auth hooks
+export { useAuth } from "./use-auth"
