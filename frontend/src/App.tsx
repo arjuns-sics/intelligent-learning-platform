@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 
-import { LandingPage, LoginPage, SignupPage, ForgotPasswordPage } from "@/pages"
+import { LandingPage, LoginPage, SignupPage, ForgotPasswordPage, CourseCreatePage } from "@/pages"
 import { Layout } from "./components/layout"
 import { ProtectedRoute } from "./components/protected-route"
 import { DashboardRouter } from "./components/dashboard-router"
@@ -25,6 +25,16 @@ export function App() {
           element={
             <ProtectedRoute>
               <DashboardRouter />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Instructor routes */}
+        <Route
+          path="/courses/create"
+          element={
+            <ProtectedRoute requiredRole="Instructor">
+              <CourseCreatePage />
             </ProtectedRoute>
           }
         />
