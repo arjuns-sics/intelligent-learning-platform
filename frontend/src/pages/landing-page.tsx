@@ -206,46 +206,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="text-center mb-16">
-            <Badge variant="secondary" className="mb-4">Testimonials</Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Loved by Learners Worldwide
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="h-full">
-                <CardHeader>
-                  <div className="flex items-center gap-1 mb-4">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <IconStar key={i} className="size-4 text-primary fill-primary" />
-                    ))}
-                  </div>
-                  <CardDescription className="text-foreground/80 text-base">
-                    "{testimonial.quote}"
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-full bg-linear-to-br from-primary/60 to-primary flex items-center justify-center text-primary-foreground font-semibold">
-                      {testimonial.initials}
-                    </div>
-                    <div>
-                      <div className="font-semibold">{testimonial.name}</div>
-                      <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-24">
         <div className="mx-auto max-w-7xl px-6">
@@ -306,26 +266,5 @@ const features = [
     icon: IconSparkles,
     title: "Smart Reminders",
     description: "Never miss a lesson with intelligent notifications that fit your schedule.",
-  },
-]
-
-const testimonials = [
-  {
-    quote: "This platform completely changed how I approach learning. The AI tutor feels like having a personal teacher available anytime.",
-    name: "Sarah Chen",
-    role: "Software Developer",
-    initials: "SC",
-  },
-  {
-    quote: "I've tried many learning platforms, but none come close to the quality and personalization offered here. Highly recommended!",
-    name: "Marcus Johnson",
-    role: "Data Scientist",
-    initials: "MJ",
-  },
-  {
-    quote: "The progress tracking helped me stay motivated. I completed my first certification in just 3 months!",
-    name: "Emily Rodriguez",
-    role: "UX Designer",
-    initials: "ER",
   },
 ]
