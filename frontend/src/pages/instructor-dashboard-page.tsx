@@ -4,6 +4,7 @@
  * student analytics, and teaching tools
  */
 
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -125,6 +126,16 @@ const mockNotifications = [
 
 export function InstructorDashboardPage() {
   const { user, role } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Get tab from URL query params, default to "overview"
+  const getInitialTab = () => {
+    const tab = searchParams.get("tab");
+    if (tab === "courses" || tab === "students" || tab === "analytics" || tab === "certificates") {
+      return tab;
+    }
+    return "overview";
+  };
 
   return (
     <div className="container py-8 px-4 md:px-6 max-w-7xl">
@@ -230,23 +241,27 @@ export function InstructorDashboardPage() {
       </div>
 
       {/* Main Content with Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="overview" className="gap-2">
+      <Tabs value={getInitialTab()} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="overview" className="gap-2" onClick={() => setSearchParams({ tab: "overview" })}>
             <IconChartBar className="size-4" />
             <span className="hidden sm:inline">Overview</span>
           </TabsTrigger>
-          <TabsTrigger value="courses" className="gap-2">
+          <TabsTrigger value="courses" className="gap-2" onClick={() => setSearchParams({ tab: "courses" })}>
             <IconBook className="size-4" />
             <span className="hidden sm:inline">Courses</span>
           </TabsTrigger>
-          <TabsTrigger value="students" className="gap-2">
+          <TabsTrigger value="students" className="gap-2" onClick={() => setSearchParams({ tab: "students" })}>
             <IconUsers className="size-4" />
             <span className="hidden sm:inline">Students</span>
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-2">
+          <TabsTrigger value="analytics" className="gap-2" onClick={() => setSearchParams({ tab: "analytics" })}>
             <IconTrendingUp className="size-4" />
             <span className="hidden sm:inline">Analytics</span>
+          </TabsTrigger>
+          <TabsTrigger value="certificates" className="gap-2" onClick={() => setSearchParams({ tab: "certificates" })}>
+            <IconCertificate className="size-4" />
+            <span className="hidden sm:inline">Certificates</span>
           </TabsTrigger>
         </TabsList>
 
@@ -270,9 +285,9 @@ export function InstructorDashboardPage() {
                       className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors"
                     >
                       <div className={`p-2 rounded-full ${notification.type === "enrollment" ? "bg-blue-500/10 text-blue-500" :
-                          notification.type === "review" ? "bg-amber-500/10 text-amber-500" :
-                            notification.type === "question" ? "bg-orange-500/10 text-orange-500" :
-                              "bg-green-500/10 text-green-500"
+                        notification.type === "review" ? "bg-amber-500/10 text-amber-500" :
+                          notification.type === "question" ? "bg-orange-500/10 text-orange-500" :
+                            "bg-green-500/10 text-green-500"
                         }`}>
                         {notification.type === "enrollment" && <IconUsers className="size-4" />}
                         {notification.type === "review" && <IconStar className="size-4" />}
@@ -728,6 +743,155 @@ export function InstructorDashboardPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Certificates Tab */}
+        <TabsContent value="certificates" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Certificates</h2>
+              <p className="text-sm text-muted-foreground">Manage and issue course completion certificates</p>
+            </div>
+            <Button variant="outline">
+              <IconCertificate className="size-4 mr-2" />
+              Create Template
+            </Button>
+          </div>
+
+          {/* Certificate Stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total Issued</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">234</div>
+                <p className="text-xs text-muted-foreground">All time</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">This Month</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">28</div>
+                <p className="text-xs text-green-600 dark:text-green-400">+12% from last month</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Pending</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">15</div>
+                <p className="text-xs text-muted-foreground">Awaiting completion</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Certificates Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Certificates</CardTitle>
+              <CardDescription>Certificates issued to students</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Course</TableHead>
+                    <TableHead>Issue Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-9">
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">AJ</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">Alex Johnson</p>
+                          <p className="text-xs text-muted-foreground">alex@example.com</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">Machine Learning</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      Feb 20, 2026
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="default" className="bg-green-500">Issued</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-9">
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">SS</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">Sarah Smith</p>
+                          <p className="text-xs text-muted-foreground">sarah@example.com</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">React Patterns</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      Feb 18, 2026
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="default" className="bg-green-500">Issued</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-9">
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">MC</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">Michael Chen</p>
+                          <p className="text-xs text-muted-foreground">michael@example.com</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">Python Basics</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      Feb 15, 2026
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="default" className="bg-green-500">Issued</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

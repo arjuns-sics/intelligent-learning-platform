@@ -102,22 +102,22 @@ export function Layout() {
                       <IconSchool className="size-4" />
                       Dashboard
                     </Link>
-                    <a href="#" className="text-sm flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                    <Link to="/dashboard?tab=courses" className={`text-sm flex items-center gap-1.5 ${location.pathname === "/dashboard" && location.search.includes("tab=courses") ? "text-primary font-medium" : "text-muted-foreground"} hover:text-foreground transition-colors`}>
                       <IconBook className="size-4" />
                       My Courses
-                    </a>
-                    <a href="#" className="text-sm flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                    </Link>
+                    <Link to="/dashboard?tab=students" className={`text-sm flex items-center gap-1.5 ${location.pathname === "/dashboard" && location.search.includes("tab=students") ? "text-primary font-medium" : "text-muted-foreground"} hover:text-foreground transition-colors`}>
                       <IconUsers className="size-4" />
                       Students
-                    </a>
-                    <a href="#" className="text-sm flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                    </Link>
+                    <Link to="/dashboard?tab=analytics" className={`text-sm flex items-center gap-1.5 ${location.pathname === "/dashboard" && location.search.includes("tab=analytics") ? "text-primary font-medium" : "text-muted-foreground"} hover:text-foreground transition-colors`}>
                       <IconChartBar className="size-4" />
                       Analytics
-                    </a>
-                    <a href="#" className="text-sm flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                    </Link>
+                    <Link to="/dashboard?tab=certificates" className={`text-sm flex items-center gap-1.5 ${location.pathname === "/dashboard" && location.search.includes("tab=certificates") ? "text-primary font-medium" : "text-muted-foreground"} hover:text-foreground transition-colors`}>
                       <IconCertificate className="size-4" />
                       Certificates
-                    </a>
+                    </Link>
                   </>
                 ) : (
                   // Student navigation
