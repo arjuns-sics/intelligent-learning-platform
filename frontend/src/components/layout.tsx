@@ -125,7 +125,10 @@ export function Layout() {
                     <Link to="/dashboard" className={`text-sm ${location.pathname === "/dashboard" ? "text-primary font-medium" : "text-muted-foreground"} hover:text-foreground transition-colors`}>
                       Dashboard
                     </Link>
-                    <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Courses</a>
+                    <Link to="/courses/browse" className={`text-sm flex items-center gap-1.5 ${location.pathname === "/courses/browse" ? "text-primary font-medium" : "text-muted-foreground"} hover:text-foreground transition-colors`}>
+                      <IconBook className="size-4" />
+                      Browse Courses
+                    </Link>
                     <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Progress</a>
                     <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Certificates</a>
                   </>
@@ -258,6 +261,11 @@ export function Layout() {
               {location.pathname === "/settings" && (
                 <BreadcrumbItem>
                   <BreadcrumbPage>Settings</BreadcrumbPage>
+                </BreadcrumbItem>
+              )}
+              {location.pathname === "/courses/browse" && (
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Browse Courses</BreadcrumbPage>
                 </BreadcrumbItem>
               )}
             </BreadcrumbList>
