@@ -276,8 +276,6 @@ const sortOptions = [
   { label: "Most Popular", value: "popular" },
   { label: "Highest Rated", value: "rating" },
   { label: "Newest", value: "newest" },
-  { label: "Price: Low to High", value: "priceAsc" },
-  { label: "Price: High to Low", value: "priceDesc" },
 ];
 
 // Category details for browse section
@@ -500,7 +498,6 @@ export function CourseBrowsePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All Levels");
-  const [selectedPriceRange, setSelectedPriceRange] = useState("all");
   const [sortBy, setSortBy] = useState("popular");
   const [showFilters, setShowFilters] = useState(true);
   const [favorites, setFavorites] = useState<number[]>([]);
@@ -574,7 +571,6 @@ export function CourseBrowsePage() {
     setSearchQuery("");
     setSelectedCategory("All Categories");
     setSelectedDifficulty("All Levels");
-    setSelectedPriceRange("all");
     setSortBy("popular");
     setCurrentPage(1);
   };
@@ -586,7 +582,6 @@ export function CourseBrowsePage() {
   const activeFilterCount = [
     selectedCategory !== "All Categories",
     selectedDifficulty !== "All Levels",
-    selectedPriceRange !== "all",
     searchQuery.trim() !== "",
   ].filter(Boolean).length;
 

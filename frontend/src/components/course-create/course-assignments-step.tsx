@@ -139,7 +139,7 @@ export function CourseAssignmentsStep({
         </div>
       ) : (
         <div className="space-y-4">
-          {formData.assignments.map((assignment, assignmentIndex) => (
+          {formData.assignments.map((assignment) => (
             <div
               key={assignment.id}
               className="border rounded-xl overflow-hidden bg-card shadow-sm"
@@ -157,11 +157,10 @@ export function CourseAssignmentsStep({
                   <IconGripVertical className="size-5" />
                 </div>
                 <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    assignment.description
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center ${assignment.description
                       ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
                       : "bg-muted text-muted-foreground"
-                  }`}
+                    }`}
                 >
                   <IconClipboardCheck className="size-5" />
                 </div>

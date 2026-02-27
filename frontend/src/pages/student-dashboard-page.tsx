@@ -406,7 +406,7 @@ export function StudentDashboardPage() {
                       key={course.id}
                       className="flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:border-border hover:bg-muted/30 transition-all group cursor-pointer"
                     >
-                      <div className="w-16 h-16 rounded-lg bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0">
+                      <div className="w-16 h-16 rounded-lg bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
                         <IconBook className="size-7 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -417,7 +417,7 @@ export function StudentDashboardPage() {
                             </h3>
                             <p className="text-sm text-muted-foreground">{course.instructor}</p>
                           </div>
-                          <Badge variant="outline" className="flex-shrink-0">
+                          <Badge variant="outline" className="shrink-0">
                             {course.progress}%
                           </Badge>
                         </div>
@@ -435,7 +435,7 @@ export function StudentDashboardPage() {
                           </span>
                         </div>
                       </div>
-                      <Button size="sm" className="flex-shrink-0">
+                      <Button size="sm" className="shrink-0">
                         Continue
                       </Button>
                     </div>
@@ -659,7 +659,7 @@ export function StudentDashboardPage() {
           <div className="grid gap-6 md:grid-cols-2">
             {mockEnrolledCourses.map((course) => (
               <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-2 bg-gradient-to-r from-primary to-primary/50" style={{ width: `${course.progress}%` }} />
+                <div className="h-2 bg-linear-to-r from-primary to-primary/50" style={{ width: `${course.progress}%` }} />
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -802,7 +802,7 @@ export function StudentDashboardPage() {
                       <div className="w-12 text-sm font-medium">{day.day}</div>
                       <div className="flex-1 h-6 bg-muted rounded-lg overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-lg transition-all"
+                          className="h-full bg-linear-to-r from-primary to-primary/70 rounded-lg transition-all"
                           style={{ width: `${(day.hours / 4) * 100}%` }}
                         />
                       </div>
@@ -1100,7 +1100,7 @@ export function StudentDashboardPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {mockCertificates.map((cert) => (
               <Card key={cert.id} className="overflow-hidden group">
-                <div className="h-2 bg-gradient-to-r from-green-500 to-emerald-500" />
+                <div className="h-2 bg-linear-to-r from-green-500 to-emerald-500" />
                 <CardContent className="pt-6">
                   <div className="flex flex-col items-center text-center">
                     <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
