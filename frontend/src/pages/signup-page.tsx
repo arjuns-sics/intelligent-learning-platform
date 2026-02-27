@@ -22,7 +22,7 @@ export function SignupPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [userType, setUserType] = useState<"Student" | "Instructor" | "Admin">("Student");
+    const [userType, setUserType] = useState<"Student" | "Instructor">("Student");
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -152,14 +152,13 @@ export function SignupPage() {
 
                         <div className="space-y-2">
                             <Label htmlFor="user-type">Account Type</Label>
-                            <Select value={userType} onValueChange={(value: "Student" | "Instructor" | "Admin") => setUserType(value)}>
+                            <Select value={userType} onValueChange={(value: "Student" | "Instructor") => setUserType(value)}>
                                 <SelectTrigger id="user-type" className="w-full">
                                     <SelectValue placeholder="Select your account type" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Student">Learner / Student</SelectItem>
                                     <SelectItem value="Instructor">Educator / Teacher</SelectItem>
-                                    <SelectItem value="Admin">Administrator</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

@@ -4,7 +4,7 @@
  */
 
 import { useAuth } from "@/hooks";
-import { DashboardPage } from "@/pages/dashboard-page";
+import { StudentDashboardPage } from "@/pages/student-dashboard-page";
 import { InstructorDashboardPage } from "@/pages/instructor-dashboard-page";
 
 export function DashboardRouter() {
@@ -34,6 +34,6 @@ export function DashboardRouter() {
       return <InstructorDashboardPage />;
     case "Student":
     default:
-      return <DashboardPage />;
+      return <StudentDashboardPage />;
   }
 }
