@@ -222,7 +222,7 @@ export function StudentDashboardPage() {
   );
 
   return (
-    <div className="container py-8 px-4 md:px-6 max-w-7xl">
+    <div className="container py-8 px-4 md:px-6 max-w-7xl mx-auto">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
