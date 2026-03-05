@@ -75,21 +75,15 @@ enrollmentSchema.methods.updateProgress = function (lessonId, moduleId) {
   if (!this.completedLessons.includes(lessonId)) {
     this.completedLessons.push(lessonId)
   }
-  if (moduleId && !this.completedModules.includes(moduleId)) {
-    // Check if all lessons in the module are completed
-    // This would need to be validated at the service layer
-    this.completedModules.push(moduleId)
-  }
   this.lastAccessedAt = Date.now()
-  this.progress = this.calculateProgress()
+  // Progress will be calculated properly in the controller with course data
   return this.save()
 }
 
-// Method to calculate progress percentage
-enrollmentSchema.methods.calculateProgress = function () {
-  // This is a simplified calculation
-  // Actual implementation would need course data
-  return this.progress
+// Method to calculate progress percentage based on completed lessons
+enrollmentSchema.methods.calculateProgress = function (totalLessons) {
+  if (!totalLessons || totalLessons === 0) return 0;
+  return Math.round((this.completedLessons.length / totalLessons) * 100);
 }
 
 // Method to mark as completed

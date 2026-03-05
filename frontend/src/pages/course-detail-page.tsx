@@ -222,9 +222,11 @@ export function CourseDetailPage() {
                       Checking...
                     </Button>
                   ) : isEnrolled ? (
-                    <Button className="w-full" size="lg" disabled variant="secondary">
-                      <IconCheck className="size-4 mr-2" />
-                      Already Enrolled
+                    <Button className="w-full" size="lg" asChild>
+                      <Link to={`/learn/${courseId}`}>
+                        <IconPlayerPlay className="size-4 mr-2" />
+                        Start Learning
+                      </Link>
                     </Button>
                   ) : (
                     <Button className="w-full" size="lg" asChild>

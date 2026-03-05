@@ -6,6 +6,7 @@ import {
   createCourse,
   getInstructorCourses,
   getCourse,
+  getCourseForLearning,
   updateCourse,
   saveDraft,
   publishCourse,
@@ -117,6 +118,17 @@ export function useCourse(courseId: string | null) {
   return useQuery({
     queryKey: ["course", courseId],
     queryFn: () => getCourse(courseId!),
+    enabled: !!courseId,
+  })
+}
+
+/**
+ * Get course details for learning (requires enrollment)
+ */
+export function useCourseForLearning(courseId: string | null) {
+  return useQuery({
+    queryKey: ["course", courseId, "learn"],
+    queryFn: () => getCourseForLearning(courseId!),
     enabled: !!courseId,
   })
 }

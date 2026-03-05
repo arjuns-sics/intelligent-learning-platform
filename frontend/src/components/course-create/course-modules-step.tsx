@@ -3,11 +3,12 @@
  * Second step - manage course structure with modules and lessons
  */
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
     SelectContent,
@@ -29,7 +30,10 @@ import {
     IconCheck,
     IconFolder,
     IconClock,
+    IconUpload,
+    IconFile,
 } from "@tabler/icons-react";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import type { CourseFormData, Module, Lesson } from "@/pages/course-create-page";
 
 interface CourseModulesStepProps {
@@ -323,11 +327,12 @@ export function CourseModulesStep({
                                                                 </div>
                                                             </div>
 
+                                                            {/* Video Lesson Fields */}
                                                             {(lessonFormData.type || lesson.type) === "video" && (
                                                                 <div className="space-y-2">
                                                                     <Label>Video URL</Label>
                                                                     <Input
-                                                                        value={lessonFormData.videoUrl || lesson.videoUrl}
+                                                                        value={lessonFormData.videoUrl || lesson.videoUrl || ""}
                                                                         onChange={(e) =>
                                                                             setLessonFormData({
                                                                                 ...lessonFormData,
@@ -336,6 +341,127 @@ export function CourseModulesStep({
                                                                         }
                                                                         placeholder="https://youtube.com/..."
                                                                     />
+                                                                </div>
+                                                            )}
+
+                                                            {/* Article Lesson Fields */}
+                                                            {(lessonFormData.type || lesson.type) === "article" && (
+                                                                <div className="space-y-2">
+                                                                    <Label>Article Content (Markdown)</Label>
+                                                                    <MarkdownEditor
+                                                                        value={lessonFormData.content || lesson.content || ""}
+                                                                        onChange={(value) =>
+                                                                            setLessonFormData({
+                                                                                ...lessonFormData,
+                                                                                content: value,
+                                                                            })
+                                                                        }
+                                                                        placeholder="Write your article content in markdown..."
+                                                                    />
+                                                                </div>
+                                                            )}
+
+                                                            {/* Resource Lesson Fields */}
+                                                            {(lessonFormData.type || lesson.type) === "resource" && (
+                                                                <div className="space-y-4">
+                                                                    <div className="space-y-2">
+                                                                        <Label>Resource Type</Label>
+                                                                        <Select
+                                                                            value={lessonFormData.resourceUrl ? "url" : lessonFormData.resourceFile ? "file" : "url"}
+                                                                            onValueChange={(value) => {
+                                                                                if (value === "url") {
+                                                                                    setLessonFormData({
+                                                                                        ...lessonFormData,
+                                                                                        resourceFile: null,
+                                                                                    });
+                                                                                } else {
+                                                                                    setLessonFormData({
+                                                                                        ...lessonFormData,
+                                                                                        resourceUrl: "",
+                                                                                    });
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <SelectTrigger>
+                                                                                <SelectValue />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                <SelectItem value="url">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <IconLink className="size-4" />
+                                                                                        External URL
+                                                                                    </div>
+                                                                                </SelectItem>
+                                                                                <SelectItem value="file">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <IconFile className="size-4" />
+                                                                                        Upload File
+                                                                                    </div>
+                                                                                </SelectItem>
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+
+                                                                    {!lessonFormData.resourceFile && (
+                                                                        <div className="space-y-2">
+                                                                            <Label>Resource URL</Label>
+                                                                            <Input
+                                                                                value={lessonFormData.resourceUrl || lesson.resourceUrl || ""}
+                                                                                onChange={(e) =>
+                                                                                    setLessonFormData({
+                                                                                        ...lessonFormData,
+                                                                                        resourceUrl: e.target.value,
+                                                                                    })
+                                                                                }
+                                                                                placeholder="https://example.com/resource.pdf"
+                                                                            />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {!lessonFormData.resourceUrl && (
+                                                                        <div className="space-y-2">
+                                                                            <Label>Upload File</Label>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Input
+                                                                                    type="file"
+                                                                                    onChange={(e) => {
+                                                                                        const file = e.target.files?.[0];
+                                                                                        if (file) {
+                                                                                            setLessonFormData({
+                                                                                                ...lessonFormData,
+                                                                                                resourceFile: file.name,
+                                                                                            });
+                                                                                        }
+                                                                                    }}
+                                                                                    className="flex-1"
+                                                                                />
+                                                                                {lessonFormData.resourceFile && (
+                                                                                    <Badge variant="secondary" className="shrink-0">
+                                                                                        <IconFile className="size-3 mr-1" />
+                                                                                        {lessonFormData.resourceFile}
+                                                                                    </Badge>
+                                                                                )}
+                                                                            </div>
+                                                                            <p className="text-xs text-muted-foreground">
+                                                                                Note: File upload will be implemented on the backend
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="space-y-2">
+                                                                        <Label>Description (Optional)</Label>
+                                                                        <Textarea
+                                                                            value={lessonFormData.content || lesson.content || ""}
+                                                                            onChange={(e) =>
+                                                                                setLessonFormData({
+                                                                                    ...lessonFormData,
+                                                                                    content: e.target.value,
+                                                                                })
+                                                                            }
+                                                                            placeholder="Add a description for this resource..."
+                                                                            className="min-h-[80px]"
+                                                                        />
+                                                                    </div>
                                                                 </div>
                                                             )}
 
@@ -384,54 +510,112 @@ export function CourseModulesStep({
                                                         </div>
                                                     ) : (
                                                         // View Mode
-                                                        <div className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors">
-                                                            <div className="text-muted-foreground cursor-grab">
-                                                                <IconGripVertical className="size-4" />
-                                                            </div>
-                                                            <Badge variant="outline" className="shrink-0 text-xs">
-                                                                {lessonIndex + 1}
-                                                            </Badge>
-                                                            <div
-                                                                className={`p-1.5 rounded-lg ${lesson.type === "video"
-                                                                    ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                                                                    : lesson.type === "article"
-                                                                        ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                                                                        : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                                                                    }`}
-                                                            >
-                                                                {getLessonTypeIcon(lesson.type)}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="font-medium text-sm truncate">
-                                                                    {lesson.title}
-                                                                </p>
-                                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                                    <IconClock className="size-3" />
-                                                                    <span>{lesson.duration}</span>
-
+                                                        <div className="border rounded-lg overflow-hidden">
+                                                            <div className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors">
+                                                                <div className="text-muted-foreground cursor-grab">
+                                                                    <IconGripVertical className="size-4" />
+                                                                </div>
+                                                                <Badge variant="outline" className="shrink-0 text-xs">
+                                                                    {lessonIndex + 1}
+                                                                </Badge>
+                                                                <div
+                                                                    className={`p-1.5 rounded-lg ${lesson.type === "video"
+                                                                        ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                                                                        : lesson.type === "article"
+                                                                            ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                                                                            : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                                                                        }`}
+                                                                >
+                                                                    {getLessonTypeIcon(lesson.type)}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-medium text-sm truncate">
+                                                                        {lesson.title}
+                                                                    </p>
+                                                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <IconClock className="size-3" />
+                                                                            <span>{lesson.duration}</span>
+                                                                        </div>
+                                                                        {lesson.type === "video" && lesson.videoUrl && (
+                                                                            <a
+                                                                                href={lesson.videoUrl}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="flex items-center gap-1 hover:text-primary"
+                                                                            >
+                                                                                <IconLink className="size-3" />
+                                                                                <span>View Video</span>
+                                                                            </a>
+                                                                        )}
+                                                                        {lesson.type === "article" && lesson.content && (
+                                                                            <span className="flex items-center gap-1">
+                                                                                <IconFileText className="size-3" />
+                                                                                <span>{lesson.content.length} chars</span>
+                                                                            </span>
+                                                                        )}
+                                                                        {lesson.type === "resource" && (
+                                                                            <span className="flex items-center gap-1">
+                                                                                {lesson.resourceUrl ? (
+                                                                                    <>
+                                                                                        <IconLink className="size-3" />
+                                                                                        <span>External URL</span>
+                                                                                    </>
+                                                                                ) : lesson.resourceFile ? (
+                                                                                    <>
+                                                                                        <IconFile className="size-3" />
+                                                                                        <span>{lesson.resourceFile}</span>
+                                                                                    </>
+                                                                                ) : null}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-1">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="size-7"
+                                                                        onClick={() => {
+                                                                            setEditingLessonId(lesson.id);
+                                                                            setLessonFormData(lesson);
+                                                                        }}
+                                                                    >
+                                                                        <IconPencil className="size-3.5" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="size-7 text-destructive hover:text-destructive"
+                                                                        onClick={() => handleRemoveLesson(module.id, lesson.id)}
+                                                                    >
+                                                                        <IconTrash className="size-3.5" />
+                                                                    </Button>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex items-center gap-1">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="size-7"
-                                                                    onClick={() => {
-                                                                        setEditingLessonId(lesson.id);
-                                                                        setLessonFormData(lesson);
-                                                                    }}
-                                                                >
-                                                                    <IconPencil className="size-3.5" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="size-7 text-destructive hover:text-destructive"
-                                                                    onClick={() => handleRemoveLesson(module.id, lesson.id)}
-                                                                >
-                                                                    <IconTrash className="size-3.5" />
-                                                                </Button>
-                                                            </div>
+
+                                                            {/* Expanded Content Preview */}
+                                                            {lesson.type === "article" && lesson.content && (
+                                                                <div className="px-3 pb-3">
+                                                                    <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground line-clamp-3">
+                                                                        {lesson.content.replace(/[#*`\[\]\(\)]/g, "").substring(0, 200)}
+                                                                        {lesson.content.length > 200 && "..."}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {lesson.type === "resource" && lesson.resourceUrl && (
+                                                                <div className="px-3 pb-3">
+                                                                    <a
+                                                                        href={lesson.resourceUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-2 text-xs text-primary hover:underline px-3 py-2 bg-muted/30 rounded-md"
+                                                                    >
+                                                                        <IconLink className="size-3" />
+                                                                        {lesson.resourceUrl}
+                                                                    </a>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>

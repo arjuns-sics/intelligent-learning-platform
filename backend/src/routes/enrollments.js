@@ -8,11 +8,20 @@ const {
   updateProgress,
   dropEnrollment,
   completeEnrollment,
+  getDashboardStats,
+  getCourseStudents,
 } = require("../controllers/enrollmentController")
 const { authenticate, authorize } = require("../middleware/auth")
 
 // All routes require authentication
 router.use(authenticate)
+
+/**
+ * @route   GET /api/enrollments/dashboard-stats
+ * @desc    Get dashboard statistics for the authenticated student
+ * @access  Private (Student)
+ */
+router.get("/dashboard-stats", authorize("Student", "Admin"), getDashboardStats)
 
 /**
  * @route   POST /api/enrollments/enroll/:courseId
@@ -62,5 +71,12 @@ router.post("/:enrollmentId/complete", authorize("Student", "Admin"), completeEn
  * @access  Private (Student)
  */
 router.delete("/:enrollmentId", authorize("Student", "Admin"), dropEnrollment)
+
+/**
+ * @route   GET /api/enrollments/course/:courseId/students
+ * @desc    Get all students enrolled in a course (instructor only)
+ * @access  Private (Instructor)
+ */
+router.get("/course/:courseId/students", authorize("Instructor", "Admin"), getCourseStudents)
 
 module.exports = router

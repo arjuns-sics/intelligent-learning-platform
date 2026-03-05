@@ -4,6 +4,7 @@
  * student analytics, and teaching tools
  */
 
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,8 +47,9 @@ import {
   IconSettings,
   IconArrowRight,
   IconLoader2,
+  IconCheck,
 } from "@tabler/icons-react";
-import { useAuth, useInstructorCourses } from "@/hooks";
+import { useAuth, useInstructorCourses, useCourseStudents } from "@/hooks";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -58,83 +60,30 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 
-// Mock data for the instructor dashboard
-const mockCourses = [
-  {
-    id: 1,
-    title: "Introduction to Machine Learning",
-    students: 156,
-    progress: 78,
-    rating: 4.8,
-    status: "Published",
-    category: "Data Science",
-    lastUpdated: "2 days ago",
-  },
-  {
-    id: 2,
-    title: "Advanced React Patterns",
-    students: 89,
-    progress: 45,
-    rating: 4.6,
-    status: "Published",
-    category: "Web Development",
-    lastUpdated: "1 week ago",
-  },
-  {
-    id: 3,
-    title: "Python for Beginners",
-    students: 234,
-    progress: 92,
-    rating: 4.9,
-    status: "Published",
-    category: "Programming",
-    lastUpdated: "3 days ago",
-  },
-  {
-    id: 4,
-    title: "Data Structures & Algorithms",
-    students: 0,
-    progress: 23,
-    rating: 0,
-    status: "Draft",
-    category: "Computer Science",
-    lastUpdated: "5 days ago",
-  },
-];
-
-const mockRecentStudents = [
-  { id: 1, name: "Alex Johnson", email: "alex@example.com", course: "Machine Learning", progress: 85, avatar: undefined },
-  { id: 2, name: "Sarah Smith", email: "sarah@example.com", course: "React Patterns", progress: 62, avatar: undefined },
-  { id: 3, name: "Michael Chen", email: "michael@example.com", course: "Python Basics", progress: 94, avatar: undefined },
-  { id: 4, name: "Emily Davis", email: "emily@example.com", course: "Machine Learning", progress: 47, avatar: undefined },
-  { id: 5, name: "James Wilson", email: "james@example.com", course: "React Patterns", progress: 73, avatar: undefined },
-];
-
-const mockAnalytics = {
-  totalStudents: 479,
-  totalCourses: 4,
-  totalRevenue: 12500,
-  averageRating: 4.7,
-  completionRate: 68,
-  engagementRate: 82,
-};
-
-const mockNotifications = [
-  { id: 1, type: "enrollment", message: "5 new students enrolled in Machine Learning course", time: "2 hours ago" },
-  { id: 2, type: "review", message: "New 5-star review on Python for Beginners", time: "5 hours ago" },
-  { id: 3, type: "question", message: "3 unanswered questions in React Patterns", time: "1 day ago" },
-  { id: 4, type: "milestone", message: "Machine Learning course reached 150 students!", time: "2 days ago" },
-];
-
 export function InstructorDashboardPage() {
   const { user, role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
   // Fetch instructor's courses from API
   const { data: coursesData, isLoading: isLoadingCourses, error } = useInstructorCourses({
     limit: 50,
     page: 1,
   });
+
+  // Get the first published course by default for student view
+  const courses = coursesData?.data?.courses || [];
+  useEffect(() => {
+    if (courses.length > 0 && !selectedCourseId) {
+      const publishedCourse = courses.find(c => c.status === "published");
+      if (publishedCourse) {
+        setSelectedCourseId(publishedCourse._id);
+      }
+    }
+  }, [courses, selectedCourseId]);
+
+  // Fetch students for selected course
+  const { data: studentsData, isLoading: isLoadingStudents } = useCourseStudents(selectedCourseId);
 
   // Get tab from URL query params, default to "overview"
   const getInitialTab = () => {
@@ -145,8 +94,6 @@ export function InstructorDashboardPage() {
     return "overview";
   };
 
-  // Extract courses from API response
-  const courses = coursesData?.data?.courses || [];
   const totalCourses = coursesData?.data?.pagination?.total || 0;
   const publishedCourses = courses.filter(c => c.status === "published").length;
 
@@ -234,7 +181,7 @@ export function InstructorDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {courses.length > 0 
+              {courses.length > 0
                 ? (courses.reduce((acc, c) => acc + (c.rating?.average || 0), 0) / courses.length).toFixed(1)
                 : "—"
               }
@@ -254,8 +201,8 @@ export function InstructorDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{mockAnalytics.completionRate}%</div>
-            <Progress value={mockAnalytics.completionRate} className="mt-2 h-1.5" />
+            <div className="text-3xl font-bold">{studentsData?.stats?.averageProgress || 0}%</div>
+            <Progress value={studentsData?.stats?.averageProgress || 0} className="mt-2 h-1.5" />
           </CardContent>
         </Card>
       </div>
@@ -287,8 +234,8 @@ export function InstructorDashboardPage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Recent Activity */}
+          <div className="grid gap-6 ">
+            {/* Recent Activity - Show recent student enrollments */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -298,90 +245,42 @@ export function InstructorDashboardPage() {
                 <CardDescription>Latest updates from your courses</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {mockNotifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors"
-                    >
-                      <div className={`p-2 rounded-full ${notification.type === "enrollment" ? "bg-blue-500/10 text-blue-500" :
-                        notification.type === "review" ? "bg-amber-500/10 text-amber-500" :
-                          notification.type === "question" ? "bg-orange-500/10 text-orange-500" :
-                            "bg-green-500/10 text-green-500"
-                        }`}>
-                        {notification.type === "enrollment" && <IconUsers className="size-4" />}
-                        {notification.type === "review" && <IconStar className="size-4" />}
-                        {notification.type === "question" && <IconMessage className="size-4" />}
-                        {notification.type === "milestone" && <IconTrendingUp className="size-4" />}
+                {studentsData?.enrollments && studentsData.enrollments.length > 0 ? (
+                  <div className="space-y-4">
+                    {studentsData.enrollments.slice(0, 5).map((enrollment, index) => (
+                      <div
+                        key={enrollment._id}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors"
+                      >
+                        <div className="p-2 rounded-full bg-blue-500/10 text-blue-500">
+                          <IconUsers className="size-4" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm">
+                            {enrollment.status === "completed"
+                              ? `${enrollment.student.name} completed the course`
+                              : `${enrollment.student.name} enrolled in the course`
+                            }
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatDistanceToNow(new Date(enrollment.enrolledAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {enrollment.progress}%
+                        </Badge>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm">{notification.message}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{notification.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <IconClock className="size-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground">No recent activity</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Common instructor tasks</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start h-auto py-3" asChild>
-                  <Link to="/courses/create">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <IconPlus className="size-4 text-primary" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-medium">Create Course</p>
-                        <p className="text-xs text-muted-foreground">Build a new course</p>
-                      </div>
-                    </div>
-                  </Link>
-                </Button>
-
-                <Button variant="outline" className="w-full justify-start h-auto py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-500/10">
-                      <IconVideo className="size-4 text-blue-500" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium">Upload Video</p>
-                      <p className="text-xs text-muted-foreground">Add new content</p>
-                    </div>
-                  </div>
-                </Button>
-
-                <Button variant="outline" className="w-full justify-start h-auto py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-amber-500/10">
-                      <IconFileText className="size-4 text-amber-500" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium">Create Quiz</p>
-                      <p className="text-xs text-muted-foreground">Test student knowledge</p>
-                    </div>
-                  </div>
-                </Button>
-
-                <Button variant="outline" className="w-full justify-start h-auto py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-green-500/10">
-                      <IconMessage className="size-4 text-green-500" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium">Q&A Dashboard</p>
-                      <p className="text-xs text-muted-foreground">Answer questions</p>
-                    </div>
-                  </div>
-                </Button>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Top Performing Courses */}
@@ -589,103 +488,139 @@ export function InstructorDashboardPage() {
               <h2 className="text-xl font-semibold">Student Management</h2>
               <p className="text-sm text-muted-foreground">Track and manage your students</p>
             </div>
-            <Button variant="outline">
-              <IconCalendar className="size-4 mr-2" />
-              Export Report
-            </Button>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedCourseId || ""}
+                onChange={(e) => setSelectedCourseId(e.target.value)}
+                className="text-sm border rounded-md px-3 py-2 bg-background"
+              >
+                <option value="">Select a course</option>
+                {courses.filter(c => c.status === "published").map(course => (
+                  <option key={course._id} value={course._id}>
+                    {course.title}
+                  </option>
+                ))}
+              </select>
+              <Button variant="outline">
+                <IconCalendar className="size-4 mr-2" />
+                Export Report
+              </Button>
+            </div>
           </div>
 
           {/* Student Stats */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Active Students</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">312</div>
-                <p className="text-xs text-muted-foreground">Currently enrolled</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Completed Courses</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">167</div>
-                <p className="text-xs text-muted-foreground">Total completions</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Avg. Completion Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">4.2 weeks</div>
-                <p className="text-xs text-muted-foreground">Per course</p>
-              </CardContent>
-            </Card>
-          </div>
+          {studentsData && (
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Active Students</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{studentsData.stats.activeStudents}</div>
+                  <p className="text-xs text-muted-foreground">Currently enrolled</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Completed Courses</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{studentsData.stats.completedStudents}</div>
+                  <p className="text-xs text-muted-foreground">Total completions</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Average Progress</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{studentsData.stats.averageProgress}%</div>
+                  <p className="text-xs text-muted-foreground">Per student</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Students Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Students</CardTitle>
-              <CardDescription>Students enrolled in your courses</CardDescription>
+              <CardTitle>Enrolled Students</CardTitle>
+              <CardDescription>
+                {selectedCourseId
+                  ? `Students enrolled in ${courses.find(c => c._id === selectedCourseId)?.title || "selected course"}`
+                  : "Select a course to view students"}
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Last Active</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockRecentStudents.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="size-9">
-                            <AvatarImage src={student.avatar} />
-                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                              {student.name.split(" ").map(n => n[0]).join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{student.name}</p>
-                            <p className="text-xs text-muted-foreground">{student.email}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{student.course}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="w-32">
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <span>{student.progress}%</span>
-                          </div>
-                          <Progress
-                            value={student.progress}
-                            className={`h-1.5 ${student.progress >= 80 ? "[&>div]:bg-green-500" : student.progress >= 50 ? "[&>div]:bg-amber-500" : "[&>div]:bg-blue-500"}`}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        2 hours ago
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">
-                          View Profile
-                        </Button>
-                      </TableCell>
+              {isLoadingStudents ? (
+                <div className="flex items-center justify-center py-12">
+                  <IconLoader2 className="size-8 animate-spin text-primary" />
+                </div>
+              ) : !selectedCourseId ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <IconUsers className="size-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Select a course to view enrolled students</p>
+                </div>
+              ) : studentsData?.enrollments?.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <IconUsers className="size-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No students enrolled in this course yet</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Last Active</TableHead>
+                      <TableHead>Enrolled</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {studentsData?.enrollments?.map((enrollment) => (
+                      <TableRow key={enrollment._id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="size-9">
+                              <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                                {enrollment.student.name.split(" ").map(n => n[0]).join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{enrollment.student.name}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">{enrollment.student.email}</TableCell>
+                        <TableCell>
+                          <div className="w-32">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span>{enrollment.progress}%</span>
+                            </div>
+                            <Progress
+                              value={enrollment.progress}
+                              className={`h-1.5 ${enrollment.progress >= 80 ? "[&>div]:bg-green-500" : enrollment.progress >= 50 ? "[&>div]:bg-amber-500" : "[&>div]:bg-blue-500"}`}
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={enrollment.status === "completed" ? "default" : enrollment.status === "active" ? "secondary" : "outline"}>
+                            {enrollment.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDistanceToNow(new Date(enrollment.lastAccessedAt), { addSuffix: true })}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDistanceToNow(new Date(enrollment.enrolledAt), { addSuffix: true })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -700,51 +635,61 @@ export function InstructorDashboardPage() {
             <div className="flex gap-2">
               <Button variant="outline" size="sm">Last 7 days</Button>
               <Button variant="outline" size="sm">Last 30 days</Button>
-              <Button variant="default" size="sm">Last 90 days</Button>
+              <Button variant="default" size="sm">All Time</Button>
             </div>
           </div>
 
-          {/* Analytics Cards */}
+          {/* Analytics Cards - Calculated from real data */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Enrollments</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{mockAnalytics.engagementRate}%</div>
-                <Progress value={mockAnalytics.engagementRate} className="mt-2 h-2" />
-                <p className="text-xs text-green-600 dark:text-green-400 mt-2">+5% from last period</p>
+                <div className="text-3xl font-bold">{courses.reduce((acc, c) => acc + (c.enrolledStudents || 0), 0)}</div>
+                <p className="text-xs text-muted-foreground mt-2">Across all courses</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Video Watch Time</CardTitle>
+                <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">1,247h</div>
-                <p className="text-xs text-muted-foreground mt-2">Total hours watched</p>
+                <div className="text-3xl font-bold">
+                  {courses.length > 0
+                    ? (courses.reduce((acc, c) => acc + (c.rating?.average || 0), 0) / courses.length).toFixed(1)
+                    : "—"
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {courses.reduce((acc, c) => acc + (c.rating?.count || 0), 0)} total reviews
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Quiz Pass Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">76%</div>
-                <Progress value={76} className="mt-2 h-2" />
-                <p className="text-xs text-muted-foreground mt-2">Average across all quizzes</p>
+                <div className="text-3xl font-bold">
+                  {studentsData?.stats?.averageProgress ? `${studentsData.stats.averageProgress}%` : "—"}
+                </div>
+                <Progress value={studentsData?.stats?.averageProgress || 0} className="mt-2 h-2" />
+                <p className="text-xs text-muted-foreground mt-2">Average across courses</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Certificates Issued</CardTitle>
+                <CardTitle className="text-sm font-medium">Completed Students</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">234</div>
-                <p className="text-xs text-green-600 dark:text-green-400 mt-2">+28 this month</p>
+                <div className="text-3xl font-bold">{studentsData?.stats?.completedStudents || 0}</div>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                  {studentsData?.stats?.activeStudents ? `${studentsData.stats.activeStudents} currently active` : "No active students"}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -757,17 +702,24 @@ export function InstructorDashboardPage() {
                 <CardDescription>Compare your courses side by side</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {mockCourses.filter(c => c.status === "Published").map((course) => (
-                    <div key={course.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium line-clamp-1">{course.title}</span>
-                        <span className="text-sm text-muted-foreground">{course.students} students</span>
+                {courses.filter(c => c.status === "published").length > 0 ? (
+                  <div className="space-y-4">
+                    {courses.filter(c => c.status === "published").map((course) => (
+                      <div key={course._id} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium line-clamp-1">{course.title}</span>
+                          <span className="text-sm text-muted-foreground">{course.enrolledStudents || 0} students</span>
+                        </div>
+                        <Progress value={studentsData?.stats?.averageProgress || 0} className="h-2" />
                       </div>
-                      <Progress value={course.progress} className="h-2" />
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <IconBook className="size-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground">No published courses yet</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -777,36 +729,39 @@ export function InstructorDashboardPage() {
                 <CardDescription>How far students have progressed</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 text-sm text-muted-foreground">0-25%</div>
-                    <div className="flex-1 h-8 bg-muted rounded-lg overflow-hidden">
-                      <div className="h-full bg-red-400" style={{ width: "15%" }}></div>
-                    </div>
-                    <div className="w-12 text-sm text-right">15%</div>
+                {studentsData?.enrollments && studentsData.enrollments.length > 0 ? (
+                  <div className="space-y-4">
+                    {(() => {
+                      const total = studentsData.enrollments.length;
+                      const ranges = [
+                        { label: "0-25%", min: 0, max: 25, color: "bg-red-400" },
+                        { label: "26-50%", min: 26, max: 50, color: "bg-amber-400" },
+                        { label: "51-75%", min: 51, max: 75, color: "bg-blue-400" },
+                        { label: "76-100%", min: 76, max: 100, color: "bg-green-400" },
+                      ];
+                      return ranges.map((range) => {
+                        const count = studentsData.enrollments.filter(
+                          (e) => e.progress >= range.min && e.progress <= range.max
+                        ).length;
+                        const percentage = Math.round((count / total) * 100);
+                        return (
+                          <div key={range.label} className="flex items-center gap-4">
+                            <div className="w-20 text-sm text-muted-foreground">{range.label}</div>
+                            <div className="flex-1 h-8 bg-muted rounded-lg overflow-hidden">
+                              <div className={`h-full ${range.color}`} style={{ width: `${percentage}%` }}></div>
+                            </div>
+                            <div className="w-12 text-sm text-right">{percentage}%</div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 text-sm text-muted-foreground">26-50%</div>
-                    <div className="flex-1 h-8 bg-muted rounded-lg overflow-hidden">
-                      <div className="h-full bg-amber-400" style={{ width: "22%" }}></div>
-                    </div>
-                    <div className="w-12 text-sm text-right">22%</div>
+                ) : (
+                  <div className="text-center py-8">
+                    <IconUsers className="size-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground">No student data available</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 text-sm text-muted-foreground">51-75%</div>
-                    <div className="flex-1 h-8 bg-muted rounded-lg overflow-hidden">
-                      <div className="h-full bg-blue-400" style={{ width: "28%" }}></div>
-                    </div>
-                    <div className="w-12 text-sm text-right">28%</div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 text-sm text-muted-foreground">76-100%</div>
-                    <div className="flex-1 h-8 bg-muted rounded-lg overflow-hidden">
-                      <div className="h-full bg-green-400" style={{ width: "35%" }}></div>
-                    </div>
-                    <div className="w-12 text-sm text-right">35%</div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -817,146 +772,107 @@ export function InstructorDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold">Certificates</h2>
-              <p className="text-sm text-muted-foreground">Manage and issue course completion certificates</p>
+              <p className="text-sm text-muted-foreground">Track course completion certificates</p>
             </div>
-            <Button variant="outline">
+            <Button variant="outline" disabled>
               <IconCertificate className="size-4 mr-2" />
               Create Template
             </Button>
           </div>
 
-          {/* Certificate Stats */}
+          {/* Certificate Stats - Calculated from completed students */}
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Total Issued</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">234</div>
+                <div className="text-2xl font-bold">{studentsData?.stats?.completedStudents || 0}</div>
                 <p className="text-xs text-muted-foreground">All time</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">This Month</CardTitle>
+                <CardTitle className="text-sm font-medium">In Progress</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">28</div>
-                <p className="text-xs text-green-600 dark:text-green-400">+12% from last month</p>
+                <div className="text-2xl font-bold">{studentsData?.stats?.activeStudents || 0}</div>
+                <p className="text-xs text-muted-foreground">Working towards certificate</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                <CardTitle className="text-sm font-medium">Eligible Courses</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">15</div>
-                <p className="text-xs text-muted-foreground">Awaiting completion</p>
+                <div className="text-2xl font-bold">{courses.filter(c => c.hasCertificate).length}</div>
+                <p className="text-xs text-muted-foreground">With certificates</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Certificates Table */}
+          {/* Recent Completions (students who completed) */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Certificates</CardTitle>
-              <CardDescription>Certificates issued to students</CardDescription>
+              <CardTitle>Recent Completions</CardTitle>
+              <CardDescription>Students who completed courses and earned certificates</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Issue Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-9">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">AJ</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">Alex Johnson</p>
-                          <p className="text-xs text-muted-foreground">alex@example.com</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">Machine Learning</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      Feb 20, 2026
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-500">Issued</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-9">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">SS</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">Sarah Smith</p>
-                          <p className="text-xs text-muted-foreground">sarah@example.com</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">React Patterns</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      Feb 18, 2026
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-500">Issued</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-9">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">MC</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">Michael Chen</p>
-                          <p className="text-xs text-muted-foreground">michael@example.com</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">Python Basics</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      Feb 15, 2026
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="default" className="bg-green-500">Issued</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+              {studentsData?.enrollments?.filter(e => e.status === "completed").length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Completed At</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {studentsData.enrollments
+                      .filter(e => e.status === "completed")
+                      .slice(0, 10)
+                      .map((enrollment) => (
+                        <TableRow key={enrollment._id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="size-9">
+                                <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                                  {enrollment.student.name.split(" ").map(n => n[0]).join("")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{enrollment.student.name}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">{enrollment.student.email}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {enrollment.completedAt ? formatDistanceToNow(new Date(enrollment.completedAt), { addSuffix: true }) : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="default" className="bg-green-500">
+                              <IconCheck className="size-3 mr-1" />
+                              100%
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm" disabled>
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <IconCertificate className="size-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No certificates issued yet</p>
+                  <p className="text-sm text-muted-foreground">Students will receive certificates upon course completion</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

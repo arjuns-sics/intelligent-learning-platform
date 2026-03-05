@@ -115,8 +115,10 @@ export interface Lesson {
   title: string;
   type: "video" | "article" | "resource";
   duration: string;
-  content: string;
+  content: string; // For article: markdown content; for resource: description
   videoUrl: string;
+  resourceUrl?: string; // For resource: external URL
+  resourceFile?: string | null; // For resource: uploaded file name/ID
 }
 
 export interface Quiz {

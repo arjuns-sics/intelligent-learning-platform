@@ -12,9 +12,21 @@ import {
   updateProgress,
   completeEnrollment,
   dropEnrollment,
+  getDashboardStats,
+  getCourseStudents,
   type GetMyEnrollmentsParams,
 } from "@/services/enrollment.service"
 import { ApiClientError } from "@/services/api-client"
+
+/**
+ * Get dashboard statistics for the authenticated student
+ */
+export function useDashboardStats() {
+  return useQuery({
+    queryKey: ["enrollments", "dashboard-stats"],
+    queryFn: () => getDashboardStats().then((res) => res.data),
+  })
+}
 
 /**
  * Check if user is enrolled in a course
@@ -78,11 +90,10 @@ export function useUpdateProgress() {
     mutationFn: ({ enrollmentId, lessonId, moduleId }: { enrollmentId: string; lessonId: string; moduleId?: string }) =>
       updateProgress(enrollmentId, lessonId, moduleId),
     onSuccess: (data) => {
-      // Invalidate enrollment query
-      if (data.data) {
-        queryClient.invalidateQueries({ queryKey: ["enrollment", data.data._id] })
-        queryClient.invalidateQueries({ queryKey: ["enrollments", "my-courses"] })
-      }
+      console.log("Progress updated, invalidating queries:", data.data);
+      // Invalidate enrollment queries
+      queryClient.invalidateQueries({ queryKey: ["enrollments", "my-courses"] })
+      queryClient.invalidateQueries({ queryKey: ["enrollment"] })
     },
   })
 }
@@ -117,5 +128,16 @@ export function useDropEnrollment() {
       queryClient.invalidateQueries({ queryKey: ["enrollment", enrollmentId] })
       queryClient.invalidateQueries({ queryKey: ["enrollments", "my-courses"] })
     },
+  })
+}
+
+/**
+ * Get course students (instructor only)
+ */
+export function useCourseStudents(courseId: string | null) {
+  return useQuery({
+    queryKey: ["enrollments", "course", courseId, "students"],
+    queryFn: () => getCourseStudents(courseId!).then((res) => res.data),
+    enabled: !!courseId,
   })
 }

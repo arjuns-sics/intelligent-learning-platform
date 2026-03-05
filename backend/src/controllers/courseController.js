@@ -400,6 +400,62 @@ const getCourse = async (req, res) => {
 }
 
 /**
+ * Get course details for learning (with modules and lessons)
+ * GET /api/courses/:id/learn
+ */
+const getCourseForLearning = async (req, res) => {
+  try {
+    const { id } = req.params
+    const studentId = req.user._id
+
+    // Get course with modules and lessons
+    const course = await Course.findById(id)
+      .select("title description thumbnail modules hasCertificate category level")
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      })
+    }
+
+    // Check if student is enrolled
+    const enrollment = await Enrollment.findOne({
+      student: studentId,
+      course: id,
+      status: { $ne: "dropped" },
+    })
+
+    if (!enrollment) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not enrolled in this course",
+      })
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        course,
+        enrollment: {
+          _id: enrollment._id,
+          progress: enrollment.progress,
+          status: enrollment.status,
+          completedLessons: enrollment.completedLessons,
+          completedModules: enrollment.completedModules,
+        },
+      },
+    })
+  } catch (error) {
+    console.error("Get course for learning error:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch course details",
+    })
+  }
+}
+
+/**
  * Update a course
  * PUT /api/courses/:id
  */
@@ -729,4 +785,5 @@ module.exports = {
   saveDraft,
   publishCourse,
   deleteCourse,
+  getCourseForLearning,
 }

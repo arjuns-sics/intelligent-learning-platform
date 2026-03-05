@@ -60,6 +60,8 @@ export {
   useUpdateProgress,
   useCompleteEnrollment,
   useDropEnrollment,
+  useDashboardStats,
+  useCourseStudents,
 } from "./use-enrollment"
 
 // Course hooks (learner-facing)
@@ -69,6 +71,7 @@ export {
   useCategories,
   useInstructorCourses,
   useCourse,
+  useCourseForLearning,
   useCreateCourse,
   useUpdateCourse,
   useSaveDraft,

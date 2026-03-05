@@ -95,6 +95,17 @@ export interface Course {
   updatedAt: string;
 }
 
+export interface CourseWithEnrollment {
+  course: Course;
+  enrollment: {
+    _id: string;
+    progress: number;
+    status: string;
+    completedLessons: string[];
+    completedModules: string[];
+  };
+}
+
 // Types for course browsing (learner-facing)
 export interface BrowseCourse {
   id: string;
@@ -250,6 +261,13 @@ export async function getInstructorCourses(params?: {
  */
 export async function getCourse(courseId: string): Promise<ApiResponse<Course>> {
   return apiClient.get<Course>(`/courses/${courseId}`);
+}
+
+/**
+ * Get course details for learning (requires enrollment)
+ */
+export async function getCourseForLearning(courseId: string): Promise<ApiResponse<CourseWithEnrollment>> {
+  return apiClient.get<CourseWithEnrollment>(`/courses/${courseId}/learn`);
 }
 
 /**

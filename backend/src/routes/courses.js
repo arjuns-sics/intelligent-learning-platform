@@ -11,6 +11,7 @@ const {
   saveDraft,
   publishCourse,
   deleteCourse,
+  getCourseForLearning,
 } = require("../controllers/courseController")
 const { authenticate, authorize, optionalAuth } = require("../middleware/auth")
 
@@ -58,6 +59,13 @@ router.get("/instructor/my-courses", authorize("Instructor", "Admin"), getInstru
  * @access  Public (for published courses), Private (for instructor's own courses)
  */
 router.get("/:id", optionalAuth, getCourse)
+
+/**
+ * @route   GET /api/courses/:id/learn
+ * @desc    Get course details for learning (requires enrollment)
+ * @access  Private (Student)
+ */
+router.get("/:id/learn", authorize("Student", "Admin"), getCourseForLearning)
 
 /**
  * @route   PUT /api/courses/:id
