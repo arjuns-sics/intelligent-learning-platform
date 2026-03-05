@@ -5,6 +5,7 @@ const router = express.Router()
 const healthRoutes = require("./health")
 const authRoutes = require("./auth")
 const courseRoutes = require("./courses")
+const enrollmentRoutes = require("./enrollments")
 
 // API v1 routes
 router.get("/v1", (req, res) => {
@@ -33,6 +34,15 @@ router.get("/v1", (req, res) => {
         "publish-course": "/courses/:id/publish (POST, requires Instructor role)",
         "delete-course": "/courses/:id (DELETE, requires Instructor role)",
       },
+      enrollments: {
+        enroll: "/enrollments/enroll/:courseId (POST, requires Student role)",
+        "my-courses": "/enrollments/my-courses (GET, requires Student role)",
+        "check-enrollment": "/enrollments/check/:courseId (GET, requires Student role)",
+        "get-enrollment": "/enrollments/:enrollmentId (GET, requires Student role)",
+        "update-progress": "/enrollments/:enrollmentId/progress (PUT, requires Student role)",
+        "complete-course": "/enrollments/:enrollmentId/complete (POST, requires Student role)",
+        "drop-course": "/enrollments/:enrollmentId (DELETE, requires Student role)",
+      },
     },
   })
 })
@@ -45,5 +55,8 @@ router.use("/auth", authRoutes)
 
 // Course routes - mounted at /api/courses
 router.use("/courses", courseRoutes)
+
+// Enrollment routes - mounted at /api/enrollments
+router.use("/enrollments", enrollmentRoutes)
 
 module.exports = router

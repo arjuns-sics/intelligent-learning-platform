@@ -4,6 +4,7 @@
  */
 
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,18 +21,40 @@ import {
   IconCheck,
   IconAlertCircle,
 } from "@tabler/icons-react";
-import { useCourse } from "@/hooks";
-import { useFavorites } from "@/hooks";
+import { useCourse, useFavorites, useCheckEnrollment } from "@/hooks";
 import type { Course } from "@/services/course.service";
+import { useAuth } from "@/hooks";
 
 export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { favorites, toggleFavorite } = useFavorites();
+  const { role, isAuthenticated } = useAuth();
 
   // Fetch course details
   const { data: courseResponse, isLoading, error } = useCourse(courseId || null);
   const course = courseResponse?.data as Course | undefined;
+
+  // Check enrollment status (only for authenticated students)
+  const shouldCheckEnrollment = isAuthenticated && role === "Student" && !!courseId;
+  const { data: enrollmentData, isLoading: isLoadingEnrollment, error: enrollmentError } = useCheckEnrollment(
+    shouldCheckEnrollment ? courseId : null
+  );
+  // enrollmentData is already the inner data object (isEnrolled, enrollment)
+  const isEnrolled = enrollmentData?.isEnrolled ?? false;
+  const isCheckingEnrollment = isLoadingEnrollment;
+
+  // Debug logging
+  useEffect(() => {
+    if (shouldCheckEnrollment) {
+      console.log("Checking enrollment:", { courseId, role, isAuthenticated, shouldCheckEnrollment });
+      console.log("Enrollment data:", enrollmentData);
+      console.log("Is enrolled:", isEnrolled);
+    }
+    if (shouldCheckEnrollment && enrollmentError) {
+      console.error("Enrollment check failed:", enrollmentError);
+    }
+  }, [enrollmentData, enrollmentError, shouldCheckEnrollment, courseId, role, isAuthenticated, isEnrolled]);
 
   // Loading state
   if (isLoading) {
@@ -193,12 +216,24 @@ export function CourseDetailPage() {
 
                   <Separator />
 
-                  <Button className="w-full" size="lg" asChild>
-                    <Link to={`/courses/${course._id}/enroll`}>
-                      <IconPlayerPlay className="size-4 mr-2" />
-                      Enroll Now
-                    </Link>
-                  </Button>
+                  {isCheckingEnrollment ? (
+                    <Button className="w-full" size="lg" disabled>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                      Checking...
+                    </Button>
+                  ) : isEnrolled ? (
+                    <Button className="w-full" size="lg" disabled variant="secondary">
+                      <IconCheck className="size-4 mr-2" />
+                      Already Enrolled
+                    </Button>
+                  ) : (
+                    <Button className="w-full" size="lg" asChild>
+                      <Link to={`/courses/${course._id}/enroll`}>
+                        <IconPlayerPlay className="size-4 mr-2" />
+                        Enroll Now
+                      </Link>
+                    </Button>
+                  )}
 
                   <Button
                     variant="outline"

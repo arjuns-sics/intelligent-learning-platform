@@ -33,9 +33,9 @@ const browseCourses = async (req, res) => {
       filter.category = category
     }
 
-    // Level filter
+    // Level filter - include "All Levels" courses when filtering by specific level
     if (level && level !== "All Levels") {
-      filter.level = level
+      filter.level = { $in: [level, "All Levels"] }
     }
 
     // Build sort object

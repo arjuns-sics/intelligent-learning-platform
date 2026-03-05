@@ -61,6 +61,7 @@ const categories = [
   "Blockchain",
   "Mobile Development",
   "Security",
+  "Other",
 ];
 
 // Difficulty levels
@@ -83,6 +84,7 @@ const categoryDetails: Record<string, { color: string; bgColor: string }> = {
   "Blockchain": { color: "text-orange-500", bgColor: "bg-orange-500/10" },
   "Mobile Development": { color: "text-indigo-500", bgColor: "bg-indigo-500/10" },
   "Security": { color: "text-red-500", bgColor: "bg-red-500/10" },
+  "Other": { color: "text-gray-500", bgColor: "bg-gray-500/10" },
 };
 
 // Course Card Component
@@ -360,18 +362,6 @@ export function CourseBrowsePage() {
     searchQuery.trim() !== "",
   ].filter(Boolean).length;
 
-  // Loading state
-  if (!favoritesLoaded || isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading courses...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Error state
   if (error) {
     return (
@@ -647,42 +637,85 @@ export function CourseBrowsePage() {
         </div>
 
         {/* Course Grid/List */}
-        {courses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <IconBook className="size-8 text-muted-foreground" />
+        {isLoading && !favoritesLoaded ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading courses...</p>
             </div>
-            <h3 className="text-lg font-semibold mb-2">No courses found</h3>
-            <p className="text-muted-foreground mb-4">
-              Try adjusting your search or filters to find what you're looking for
-            </p>
-            <Button variant="outline" onClick={resetFilters}>
-              Clear all filters
-            </Button>
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {courses.map((course) => (
-              <CourseCard
-                key={course.id}
-                course={course}
-                isFavorite={favorites.includes(course.id)}
-                onToggleFavorite={() => toggleFavorite(course.id)}
-                viewMode="grid"
-              />
-            ))}
+            {isLoading ? (
+              Array.from({ length: coursesPerPage }).map((_, index) => (
+                <div key={index} className="animate-pulse">
+                  <div className="h-40 bg-muted rounded-t-lg" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-muted rounded w-1/4" />
+                    <div className="h-6 bg-muted rounded w-3/4" />
+                    <div className="h-4 bg-muted rounded w-1/2" />
+                    <div className="h-4 bg-muted rounded w-full" />
+                    <div className="h-4 bg-muted rounded w-2/3" />
+                  </div>
+                </div>
+              ))
+            ) : courses.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <IconBook className="size-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No courses found</h3>
+                <p className="text-muted-foreground mb-4">
+                  Try adjusting your search or filters to find what you're looking for
+                </p>
+                <Button variant="outline" onClick={resetFilters}>
+                  Clear all filters
+                </Button>
+              </div>
+            ) : (
+              courses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  isFavorite={favorites.includes(course.id)}
+                  onToggleFavorite={() => toggleFavorite(course.id)}
+                  viewMode="grid"
+                />
+              ))
+            )}
           </div>
         ) : (
           <div className="space-y-4">
-            {courses.map((course) => (
-              <CourseCard
-                key={course.id}
-                course={course}
-                isFavorite={favorites.includes(course.id)}
-                onToggleFavorite={() => toggleFavorite(course.id)}
-                viewMode="list"
-              />
-            ))}
+            {isLoading ? (
+              Array.from({ length: coursesPerPage }).map((_, index) => (
+                <div key={index} className="animate-pulse">
+                  <div className="h-48 bg-muted rounded-lg" />
+                </div>
+              ))
+            ) : courses.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <IconBook className="size-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No courses found</h3>
+                <p className="text-muted-foreground mb-4">
+                  Try adjusting your search or filters to find what you're looking for
+                </p>
+                <Button variant="outline" onClick={resetFilters}>
+                  Clear all filters
+                </Button>
+              </div>
+            ) : (
+              courses.map((course) => (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  isFavorite={favorites.includes(course.id)}
+                  onToggleFavorite={() => toggleFavorite(course.id)}
+                  viewMode="list"
+                />
+              ))
+            )}
           </div>
         )}
 

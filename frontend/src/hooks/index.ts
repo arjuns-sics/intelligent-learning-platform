@@ -51,6 +51,17 @@ export { useAuth } from "./use-auth"
 // Favorites hook
 export { useFavorites } from "./use-favorites"
 
+// Enrollment hooks
+export {
+  useCheckEnrollment,
+  useMyEnrollments,
+  useEnrollment,
+  useEnrollInCourse,
+  useUpdateProgress,
+  useCompleteEnrollment,
+  useDropEnrollment,
+} from "./use-enrollment"
+
 // Course hooks (learner-facing)
 export {
   useBrowseCourses,

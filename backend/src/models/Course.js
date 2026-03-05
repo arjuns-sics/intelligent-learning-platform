@@ -131,17 +131,20 @@ courseSchema.index({ title: "text", description: "text" })
 
 // Virtual for total lessons
 courseSchema.virtual("totalLessons").get(function () {
-  return this.modules.reduce((acc, module) => acc + module.lessons.length, 0)
+  if (!this.modules || !Array.isArray(this.modules)) {
+    return 0
+  }
+  return this.modules.reduce((acc, module) => acc + (module.lessons?.length || 0), 0)
 })
 
 // Virtual for total quizzes
 courseSchema.virtual("totalQuizzes").get(function () {
-  return this.quizzes.length
+  return this.quizzes?.length || 0
 })
 
 // Virtual for total assignments
 courseSchema.virtual("totalAssignments").get(function () {
-  return this.assignments.length
+  return this.assignments?.length || 0
 })
 
 module.exports = mongoose.model("Course", courseSchema)
