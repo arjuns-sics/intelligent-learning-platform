@@ -1,11 +1,12 @@
 /**
- * Course Create Page
- * Multi-step course creation wizard for instructors
+ * Course Edit Page
+ * Multi-step course editing wizard for instructors
  */
 
 import { useState, useCallback, useMemo, useReducer, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -33,8 +34,9 @@ import { CourseModulesStep } from "@/components/course-create/course-modules-ste
 import { CourseQuizzesStep } from "@/components/course-create/course-quizzes-step.tsx";
 import { CourseAssignmentsStep } from "@/components/course-create/course-assignments-step.tsx";
 import { CourseSettingsStep } from "@/components/course-create/course-settings-step.tsx";
-import { useCreateCourse, useSaveDraft, usePublishCourse } from "@/hooks/use-queries";
+import { useCourse, useUpdateCourse, useSaveDraft, usePublishCourse } from "@/hooks/use-queries";
 import { toast } from "sonner";
+import type { CourseFormData, Module, Lesson, Quiz, Assignment } from "./course-create-page";
 
 // Constants
 const STEPS = [
@@ -45,9 +47,9 @@ const STEPS = [
   { id: 5, title: "Settings", description: "Pricing & publish", icon: IconSettings },
 ] as const;
 
-const STORAGE_KEY = "course-create-draft";
+const STORAGE_KEY_PREFIX = "course-edit-draft-";
 
-// Pro Tips Data - Data-driven approach for composition patterns
+// Pro Tips Data
 const PRO_TIPS: Record<number, Array<{ text: string }>> = {
   1: [
     { text: "Use a descriptive title that clearly communicates the course value" },
@@ -75,87 +77,13 @@ const PRO_TIPS: Record<number, Array<{ text: string }>> = {
   ],
 };
 
-// Types
-export interface CourseFormData {
-  // Step 1: Details
-  title: string;
-  subtitle: string;
-  description: string;
-  category: string;
-  level: "Beginner" | "Intermediate" | "Advanced" | "All Levels";
-  language: string;
-  thumbnail: string | null;
-  prerequisites: string[];
-  learningObjectives: string[];
-
-  // Step 2: Modules
-  modules: Module[];
-
-  // Step 3: Quizzes
-  quizzes: Quiz[];
-
-  // Step 4: Assignments
-  assignments: Assignment[];
-  hasCertificate: boolean;
-  duration: string;
-  maxStudents: number | null;
-  published: boolean;
-}
-
-export interface Module {
-  id: string;
-  title: string;
-  description: string;
-  lessons: Lesson[];
-  isExpanded: boolean;
-}
-
-export interface Lesson {
-  id: string;
-  title: string;
-  type: "video" | "article" | "resource";
-  duration: string;
-  content: string;
-  videoUrl: string;
-}
-
-export interface Quiz {
-  id: string;
-  title: string;
-  moduleId: string | null;
-  timeLimit: number;
-  passingScore: number;
-  questions: QuizQuestion[];
-}
-
-export interface QuizQuestion {
-  id: string;
-  question: string;
-  type: "multiple-choice" | "true-false" | "short-answer";
-  options: string[];
-  correctAnswer: string | number;
-  points: number;
-}
-
-export interface Assignment {
-  id: string;
-  title: string;
-  description: string;
-  moduleId: string | null;
-  dueDate: string;
-  maxScore: number;
-  fileTypes: string[];
-  maxFileSize: number;
-  instructions: string;
-}
-
 // Initial State
 const initialFormData: CourseFormData = {
   title: "",
   subtitle: "",
   description: "",
   category: "",
-  level: "Beginner",
+  level: "",
   language: "English",
   thumbnail: null,
   prerequisites: [],
@@ -169,12 +97,13 @@ const initialFormData: CourseFormData = {
   published: false,
 };
 
-// Form Reducer - recommended pattern for complex form state
+// Form Reducer
 type FormAction =
   | { type: "UPDATE_FIELD"; field: keyof CourseFormData; value: CourseFormData[keyof CourseFormData] }
   | { type: "UPDATE_MULTIPLE"; data: Partial<CourseFormData> }
   | { type: "RESET_FORM" }
-  | { type: "LOAD_DRAFT"; data: CourseFormData };
+  | { type: "LOAD_DRAFT"; data: CourseFormData }
+  | { type: "LOAD_COURSE"; data: CourseFormData };
 
 function formReducer(state: CourseFormData, action: FormAction): CourseFormData {
   switch (action.type) {
@@ -185,6 +114,7 @@ function formReducer(state: CourseFormData, action: FormAction): CourseFormData 
     case "RESET_FORM":
       return initialFormData;
     case "LOAD_DRAFT":
+    case "LOAD_COURSE":
       return action.data;
     default:
       return state;
@@ -230,45 +160,171 @@ function validateStep(stepId: number, formData: CourseFormData): ValidationResul
   return { isValid: errors.length === 0, errors };
 }
 
-export function CourseCreatePage() {
+// Convert API course data to form data
+function convertCourseToFormData(course: any): CourseFormData {
+  return {
+    title: course.title || "",
+    subtitle: course.subtitle || "",
+    description: course.description || "",
+    category: course.category || "",
+    level: course.level || "",
+    language: course.language || "English",
+    thumbnail: course.thumbnail || null,
+    prerequisites: course.prerequisites || [],
+    learningObjectives: course.learningObjectives || [],
+    modules: course.modules?.map((m: any) => ({
+      id: m._id || crypto.randomUUID(),
+      title: m.title || "",
+      description: m.description || "",
+      lessons: m.lessons?.map((l: any) => ({
+        id: l._id || crypto.randomUUID(),
+        title: l.title || "",
+        type: l.type || "video",
+        duration: l.duration || "",
+        content: l.content || "",
+        videoUrl: l.videoUrl || "",
+      })) || [],
+      isExpanded: false,
+    })) || [],
+    quizzes: course.quizzes?.map((q: any) => ({
+      id: q._id || crypto.randomUUID(),
+      title: q.title || "",
+      moduleId: q.moduleId || null,
+      timeLimit: q.timeLimit || 0,
+      passingScore: q.passingScore || 70,
+      questions: q.questions?.map((qst: any) => ({
+        id: qst._id || crypto.randomUUID(),
+        question: qst.question || "",
+        type: qst.type || "multiple-choice",
+        options: qst.options || [],
+        correctAnswer: qst.correctAnswer,
+        points: qst.points || 1,
+      })) || [],
+    })) || [],
+    assignments: course.assignments?.map((a: any) => ({
+      id: a._id || crypto.randomUUID(),
+      title: a.title || "",
+      description: a.description || "",
+      moduleId: a.moduleId || null,
+      dueDate: a.dueDate || "",
+      maxScore: a.maxScore || 100,
+      fileTypes: a.fileTypes || [],
+      maxFileSize: a.maxFileSize || 10,
+      instructions: a.instructions || "",
+    })) || [],
+    hasCertificate: course.hasCertificate ?? true,
+    duration: course.duration || "",
+    maxStudents: course.maxStudents || null,
+    published: course.published || false,
+  };
+}
+
+export function CourseEditPage() {
   const navigate = useNavigate();
+  const { courseId } = useParams<{ courseId: string }>();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, dispatch] = useReducer(formReducer, initialFormData);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
 
   // TanStack Query hooks
-  const createCourseMutation = useCreateCourse();
-  const saveDraftMutation = useSaveDraft(createdCourseId!);
+  const { data: courseData, isLoading: isLoadingCourse, error: courseError, isError } = useCourse(courseId || null);
+  const updateCourseMutation = useUpdateCourse(courseId!);
+  const saveDraftMutation = useSaveDraft(courseId!);
   const publishCourseMutation = usePublishCourse();
 
-  // Load draft from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedDraft = localStorage.getItem(STORAGE_KEY);
-      if (savedDraft) {
-        const parsedDraft = JSON.parse(savedDraft) as CourseFormData;
-        dispatch({ type: "LOAD_DRAFT", data: parsedDraft });
-      }
-    } catch (error) {
-      console.error("Failed to load draft:", error);
-    }
-  }, []);
+  const storageKey = courseId ? `${STORAGE_KEY_PREFIX}${courseId}` : null;
 
-  // Auto-save draft to localStorage (not backend)
+  // Check if course is published
   useEffect(() => {
+    if (courseData?.data) {
+      setIsPublished(courseData.data.status === "published" || courseData.data.published === true);
+    }
+  }, [courseData]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Edit page state:", {
+      courseId,
+      hasCourseData: !!courseData?.data,
+      courseData: courseData?.data ? { title: courseData.data.title, id: courseData.data._id } : null,
+      isLoadingCourse,
+      courseError,
+      isInitialized,
+      isError,
+    });
+  }, [courseData, isLoadingCourse, courseError, isInitialized, courseId, isError]);
+
+  // Handle course load error
+  useEffect(() => {
+    if (courseError) {
+      toast.error("Failed to load course. Please try again.");
+      console.error("Course load error:", courseError);
+    }
+  }, [courseError]);
+
+  // Handle 404 - course not found
+  useEffect(() => {
+    if (isError && !isLoadingCourse) {
+      console.error("Course not found or error loading");
+      // Don't redirect immediately, let the loading state handle it
+    }
+  }, [isError, isLoadingCourse]);
+
+  // Load course data on mount
+  useEffect(() => {
+    if (!courseId) {
+      toast.error("Course ID is required");
+      navigate("/dashboard?tab=courses");
+      return;
+    }
+
+    // If we have course data from API, use it (takes priority)
+    if (courseData?.data) {
+      console.log("Loading course from API:", courseData.data);
+      const form_data = convertCourseToFormData(courseData.data);
+      dispatch({ type: "LOAD_COURSE", data: form_data });
+      setIsInitialized(true);
+      // Clear localStorage draft since we have fresh data
+      if (storageKey) {
+        localStorage.removeItem(storageKey);
+      }
+      return;
+    }
+
+    // While waiting for API, try to load from localStorage (draft)
+    if (storageKey && !isInitialized) {
+      try {
+        const savedDraft = localStorage.getItem(storageKey);
+        if (savedDraft) {
+          console.log("Loading draft from localStorage");
+          const parsedDraft = JSON.parse(savedDraft) as CourseFormData;
+          dispatch({ type: "LOAD_DRAFT", data: parsedDraft });
+          setIsInitialized(true);
+        }
+      } catch (error) {
+        console.error("Failed to load draft:", error);
+      }
+    }
+  }, [courseId, courseData, storageKey, navigate, isInitialized]);
+
+  // Auto-save draft to localStorage
+  useEffect(() => {
+    if (!isInitialized || !storageKey) return;
+
     const timeoutId = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+        localStorage.setItem(storageKey, JSON.stringify(formData));
       } catch (error) {
         console.error("Failed to save draft:", error);
       }
     }, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [formData]);
+  }, [formData, isInitialized, storageKey]);
 
-  // Memoized computed values - performance optimization
+  // Memoized computed values
   const progress = useMemo(() =>
     ((currentStep - 1) / (STEPS.length - 1)) * 100,
     [currentStep]
@@ -279,17 +335,12 @@ export function CourseCreatePage() {
     [formData.modules]
   );
 
-  // const totalQuestions = useMemo(() =>
-  //   formData.quizzes.reduce((acc, q) => acc + q.questions.length, 0),
-  //   [formData.quizzes]
-  // );
-
   const currentStepTips = useMemo(() =>
     PRO_TIPS[currentStep] || [],
     [currentStep]
   );
 
-  // Memoized handlers - prevent unnecessary re-renders
+  // Memoized handlers
   const updateFormData = useCallback((data: Partial<CourseFormData>) => {
     dispatch({ type: "UPDATE_MULTIPLE", data });
     setValidationErrors([]);
@@ -314,12 +365,10 @@ export function CourseCreatePage() {
   }, [currentStep]);
 
   const handleStepClick = useCallback((stepId: number) => {
-    // Allow going back to any previous step without validation
     if (stepId < currentStep) {
       setCurrentStep(stepId);
       setValidationErrors([]);
     }
-    // For forward navigation, validate current step first
     if (stepId > currentStep) {
       const validation = validateStep(currentStep, formData);
       if (validation.isValid) {
@@ -331,29 +380,29 @@ export function CourseCreatePage() {
   }, [currentStep, formData]);
 
   const handleSaveDraft = useCallback(async () => {
+    if (!courseId) return;
+
     try {
-      if (createdCourseId) {
-        // Course already exists, update draft
-        await saveDraftMutation.mutateAsync(formData);
-        toast.success("Draft saved successfully");
-      } else {
-        // Create new course as draft
-        const response = await createCourseMutation.mutateAsync({
-          ...formData,
-          published: false,
-        });
-        if (response.data) {
-          setCreatedCourseId(response.data._id);
-          toast.success("Draft created successfully");
-        }
+      await saveDraftMutation.mutateAsync(formData);
+      // Clear localStorage draft after successful save
+      if (storageKey) {
+        localStorage.removeItem(storageKey);
       }
+      toast.success("Draft saved successfully");
     } catch (error) {
       console.error("Failed to save draft:", error);
       toast.error("Failed to save draft. Please try again.");
     }
-  }, [formData, createdCourseId, createCourseMutation, saveDraftMutation]);
+  }, [formData, courseId, saveDraftMutation, storageKey]);
 
   const handlePublish = useCallback(async () => {
+    if (!courseId) {
+      toast.error("Course ID is missing");
+      return;
+    }
+
+    console.log("Publishing course:", { courseId, isPublished, formData });
+
     // Validate all steps before publishing
     const allErrors: string[] = [];
     STEPS.forEach((step) => {
@@ -367,28 +416,30 @@ export function CourseCreatePage() {
     }
 
     try {
-      if (createdCourseId) {
-        // Update course and publish
-        await publishCourseMutation.mutateAsync(createdCourseId);
-        toast.success("Course published successfully");
+      if (isPublished) {
+        // For already published courses, just update the content
+        console.log("Updating published course:", courseId);
+        const result = await updateCourseMutation.mutateAsync(formData);
+        console.log("Update result:", result);
+        toast.success("Course updated successfully");
       } else {
-        // Create and publish course in one step
-        const response = await createCourseMutation.mutateAsync({
-          ...formData,
-          published: true,
-        });
-        if (response.data) {
-          toast.success("Course published successfully");
-        }
+        // For draft courses, publish them
+        console.log("Publishing draft course:", courseId);
+        const result = await publishCourseMutation.mutateAsync(courseId);
+        console.log("Publish result:", result);
+        toast.success("Course published successfully");
       }
-      localStorage.removeItem(STORAGE_KEY);
+      // Clear localStorage draft
+      if (storageKey) {
+        localStorage.removeItem(storageKey);
+      }
       dispatch({ type: "RESET_FORM" });
-      navigate("/dashboard");
+      navigate("/dashboard?tab=courses");
     } catch (error) {
-      console.error("Failed to publish course:", error);
-      toast.error("Failed to publish course. Please try again.");
+      console.error("Failed to update/publish course:", error);
+      toast.error("Failed to update course. Please try again.");
     }
-  }, [formData, createdCourseId, createCourseMutation, publishCourseMutation, navigate]);
+  }, [formData, courseId, isPublished, updateCourseMutation, publishCourseMutation, storageKey, navigate]);
 
   // Render step content based on current step
   const renderStepContent = useCallback(() => {
@@ -433,6 +484,45 @@ export function CourseCreatePage() {
     }
   }, [currentStep, formData, updateFormData]);
 
+  // Loading states
+  if (!courseId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <IconLoader2 className="size-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Invalid course ID</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError && !isLoadingCourse) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+            <IconLoader2 className="size-8 text-destructive" />
+          </div>
+          <p className="text-destructive">Failed to load course</p>
+          <Button variant="outline" onClick={() => navigate("/dashboard?tab=courses")}>
+            Back to Courses
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isInitialized || isLoadingCourse) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <IconLoader2 className="size-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading course...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/20">
       {/* Header */}
@@ -443,7 +533,7 @@ export function CourseCreatePage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/dashboard?tab=courses")}
                 className="gap-2"
               >
                 <IconArrowLeft className="size-4" />
@@ -451,34 +541,42 @@ export function CourseCreatePage() {
               </Button>
               <Separator orientation="vertical" className="h-6" />
               <div>
-                <h1 className="text-lg font-semibold">Create New Course</h1>
+                <h1 className="text-lg font-semibold">Edit Course</h1>
                 <p className="text-sm text-muted-foreground">
                   {formData.title || "Untitled Course"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={handleSaveDraft}
-                disabled={createCourseMutation.isPending || saveDraftMutation.isPending}
-              >
-                {createCourseMutation.isPending || saveDraftMutation.isPending ? (
-                  <IconLoader2 className="size-4 mr-2 animate-spin" />
-                ) : null}
-                Save Draft
-              </Button>
+              {!isPublished && (
+                <Button
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={updateCourseMutation.isPending || saveDraftMutation.isPending}
+                >
+                  {updateCourseMutation.isPending || saveDraftMutation.isPending ? (
+                    <IconLoader2 className="size-4 mr-2 animate-spin" />
+                  ) : null}
+                  Save Draft
+                </Button>
+              )}
+              {isPublished ? (
+                <Badge variant="default" className="bg-green-500">
+                  Published
+                </Badge>
+              ) : null}
               {currentStep === STEPS.length && (
                 <Button
                   onClick={handlePublish}
-                  disabled={createCourseMutation.isPending || publishCourseMutation.isPending}
+                  disabled={updateCourseMutation.isPending || publishCourseMutation.isPending}
+                  variant={isPublished ? "secondary" : "default"}
                 >
-                  {createCourseMutation.isPending || publishCourseMutation.isPending ? (
+                  {updateCourseMutation.isPending || publishCourseMutation.isPending ? (
                     <IconLoader2 className="size-4 mr-2 animate-spin" />
                   ) : (
                     <IconSparkles className="size-4 mr-2" />
                   )}
-                  Publish Course
+                  {isPublished ? "Update Published Course" : "Publish Course"}
                 </Button>
               )}
             </div>
@@ -599,7 +697,7 @@ export function CourseCreatePage() {
               </CardContent>
             </Card>
 
-            {/* Tips Card - Data-driven approach */}
+            {/* Tips Card */}
             <Card className="border-0 shadow-lg bg-linear-to-br from-primary/5 to-primary/10">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -619,7 +717,7 @@ export function CourseCreatePage() {
               </CardContent>
             </Card>
 
-            {/* Quick Stats - Memoized */}
+            {/* Quick Stats */}
             <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Course Overview</CardTitle>
@@ -674,20 +772,23 @@ export function CourseCreatePage() {
             </Button>
           ) : (
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleSaveDraft}
-                disabled={createCourseMutation.isPending || saveDraftMutation.isPending}
-              >
-                Save Draft
-              </Button>
+              {!isPublished && (
+                <Button
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={updateCourseMutation.isPending || saveDraftMutation.isPending}
+                >
+                  Save Draft
+                </Button>
+              )}
               <Button
                 onClick={handlePublish}
-                disabled={createCourseMutation.isPending || publishCourseMutation.isPending}
+                disabled={updateCourseMutation.isPending || publishCourseMutation.isPending || isPublished}
                 className="gap-2"
+                variant={isPublished ? "secondary" : "default"}
               >
                 <IconSparkles className="size-4" />
-                Publish Course
+                {isPublished ? "Update Published Course" : "Publish Course"}
               </Button>
             </div>
           )}

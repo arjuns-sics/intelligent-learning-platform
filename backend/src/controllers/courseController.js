@@ -300,6 +300,14 @@ const saveDraft = async (req, res) => {
       })
     }
 
+    // Prevent saving published courses as draft
+    if (course.status === "published" || course.published === true) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot save a published course as draft. Published courses should be updated directly.",
+      })
+    }
+
     // Update course data
     const allowedFields = [
       "title",
