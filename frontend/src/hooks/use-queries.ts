@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
+  browseCourses,
+  getFeaturedCourses,
+  getCategories,
   createCourse,
   getInstructorCourses,
   getCourse,
@@ -11,6 +14,10 @@ import {
   type UpdateCourseData,
   type Course,
   type CoursesResponse,
+  type BrowseCoursesParams,
+  type BrowseCoursesResponse,
+  type BrowseCourse,
+  type CategoryInfo,
 } from "@/services/course.service"
 
 // Example API functions - replace with actual API calls
@@ -55,7 +62,39 @@ export function useUpdateUser() {
   })
 }
 
-// Course hooks
+// Course browsing hooks (for learners)
+
+/**
+ * Browse courses with search, filter, and pagination
+ */
+export function useBrowseCourses(params?: BrowseCoursesParams) {
+  return useQuery<BrowseCoursesResponse>({
+    queryKey: ["courses", "browse", params],
+    queryFn: () => browseCourses(params).then((res) => res.data!),
+  })
+}
+
+/**
+ * Get featured courses (bestsellers)
+ */
+export function useFeaturedCourses(limit?: number) {
+  return useQuery<BrowseCourse[]>({
+    queryKey: ["courses", "featured", limit],
+    queryFn: () => getFeaturedCourses(limit).then((res) => res.data!),
+  })
+}
+
+/**
+ * Get all categories with course counts
+ */
+export function useCategories() {
+  return useQuery<CategoryInfo[]>({
+    queryKey: ["courses", "categories"],
+    queryFn: () => getCategories().then((res) => res.data!),
+  })
+}
+
+// Course hooks (for instructors)
 
 /**
  * Get all courses for the authenticated instructor

@@ -37,6 +37,7 @@ import {
   IconPlus,
   IconFolder,
   IconPlayerPlay,
+  IconArchive,
 } from "@tabler/icons-react";
 import { useCourse, useDeleteCourse, usePublishCourse } from "@/hooks";
 import {
@@ -187,9 +188,21 @@ export function InstructorCourseViewPage() {
           {/* Course Info */}
           <div className="flex-1">
             <div className="flex items-start gap-4">
-              <div className="w-20 h-20 rounded-xl bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0">
-                <IconBook className="size-10 text-primary" />
+              {/* Course Thumbnail */}
+              <div className="w-48 h-32 rounded-xl overflow-hidden bg-muted flex-shrink-0 border">
+                {course.thumbnail ? (
+                  <img
+                    src={course.thumbnail}
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary/20 to-primary/5">
+                    <IconBook className="size-10 text-primary/40" />
+                  </div>
+                )}
               </div>
+              
               <div className="flex-1">
                 <h1 className="text-3xl font-bold tracking-tight">{course.title}</h1>
                 {course.subtitle && (

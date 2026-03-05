@@ -43,217 +43,12 @@ import {
   IconBook2,
   IconPlayerPlay,
 } from "@tabler/icons-react";
+import { useBrowseCourses, useFeaturedCourses, useCategories } from "@/hooks";
+import { useFavorites } from "@/hooks";
+import type { BrowseCourse } from "@/services/course.service";
 
 // Icon alias for grid view
 const IconGrid = IconLayoutGrid;
-
-// Mock course data
-const mockCourses = [
-  {
-    id: 1,
-    title: "Introduction to Machine Learning",
-    description: "Learn the fundamentals of machine learning, including supervised and unsupervised learning algorithms, neural networks, and practical applications.",
-    instructor: "Dr. Sarah Chen",
-    category: "Data Science",
-    difficulty: "Intermediate",
-    duration: "24 hours",
-    modules: 12,
-    students: 15420,
-    rating: 4.8,
-    reviews: 2340,
-    tags: ["Python", "TensorFlow", "Neural Networks"],
-    bestseller: true,
-    isNew: false,
-    lastUpdated: "2026-02-15",
-  },
-  {
-    id: 2,
-    title: "Advanced React Patterns",
-    description: "Master advanced React patterns including compound components, render props, custom hooks, and state management techniques.",
-    instructor: "Michael Torres",
-    category: "Web Development",
-    difficulty: "Advanced",
-    duration: "16 hours",
-    modules: 8,
-    students: 8930,
-    rating: 4.9,
-    reviews: 1560,
-    tags: ["React", "TypeScript", "Patterns"],
-    bestseller: true,
-    isNew: false,
-    lastUpdated: "2026-02-10",
-  },
-  {
-    id: 3,
-    title: "Python for Data Analysis",
-    description: "Comprehensive guide to using Python for data analysis with pandas, numpy, and visualization libraries.",
-    instructor: "Dr. Emily Watson",
-    category: "Programming",
-    difficulty: "Beginner",
-    duration: "20 hours",
-    modules: 10,
-    students: 24500,
-    rating: 4.7,
-    reviews: 3200,
-    tags: ["Python", "Pandas", "Data Analysis"],
-    bestseller: false,
-    isNew: false,
-    lastUpdated: "2026-01-20",
-  },
-  {
-    id: 4,
-    title: "UI/UX Design Fundamentals",
-    description: "Learn the principles of user interface and user experience design, from wireframing to prototyping.",
-    instructor: "Alex Rivera",
-    category: "Design",
-    difficulty: "Beginner",
-    duration: "30 hours",
-    modules: 15,
-    students: 12800,
-    rating: 4.6,
-    reviews: 1890,
-    tags: ["Figma", "UI Design", "UX Research"],
-    bestseller: false,
-    isNew: false,
-    lastUpdated: "2026-02-01",
-  },
-  {
-    id: 5,
-    title: "Deep Learning Specialization",
-    description: "Dive deep into neural networks, CNNs, RNNs, and transformers. Build real-world AI applications.",
-    instructor: "Dr. Andrew Chen",
-    category: "Data Science",
-    difficulty: "Advanced",
-    duration: "40 hours",
-    modules: 18,
-    students: 9800,
-    rating: 4.9,
-    reviews: 1450,
-    tags: ["Deep Learning", "Neural Networks", "AI"],
-    bestseller: true,
-    isNew: false,
-    lastUpdated: "2026-02-12",
-  },
-  {
-    id: 6,
-    title: "TypeScript Masterclass",
-    description: "Master TypeScript from basics to advanced types, generics, and integration with modern frameworks.",
-    instructor: "Matt Pocock",
-    category: "Web Development",
-    difficulty: "Intermediate",
-    duration: "18 hours",
-    modules: 9,
-    students: 7500,
-    rating: 4.8,
-    reviews: 980,
-    tags: ["TypeScript", "JavaScript", "Types"],
-    bestseller: false,
-    isNew: true,
-    lastUpdated: "2026-02-20",
-  },
-  {
-    id: 7,
-    title: "Data Visualization with D3.js",
-    description: "Create stunning interactive data visualizations using D3.js library for web applications.",
-    instructor: "Shirley Wu",
-    category: "Data Science",
-    difficulty: "Intermediate",
-    duration: "22 hours",
-    modules: 11,
-    students: 5600,
-    rating: 4.7,
-    reviews: 720,
-    tags: ["D3.js", "Visualization", "JavaScript"],
-    bestseller: false,
-    isNew: false,
-    lastUpdated: "2026-01-25",
-  },
-  {
-    id: 8,
-    title: "Cloud Architecture on AWS",
-    description: "Design and implement scalable, reliable cloud architectures using Amazon Web Services.",
-    instructor: "Ryan Johnson",
-    category: "Cloud Computing",
-    difficulty: "Advanced",
-    duration: "35 hours",
-    modules: 14,
-    students: 11200,
-    rating: 4.8,
-    reviews: 1680,
-    tags: ["AWS", "Cloud", "DevOps"],
-    bestseller: true,
-    isNew: false,
-    lastUpdated: "2026-02-08",
-  },
-  {
-    id: 9,
-    title: "Blockchain Development",
-    description: "Build decentralized applications on Ethereum. Learn smart contracts and Web3 integration.",
-    instructor: "Vitalik More",
-    category: "Blockchain",
-    difficulty: "Advanced",
-    duration: "28 hours",
-    modules: 12,
-    students: 6800,
-    rating: 4.5,
-    reviews: 890,
-    tags: ["Blockchain", "Ethereum", "Smart Contracts"],
-    bestseller: false,
-    isNew: true,
-    lastUpdated: "2026-02-18",
-  },
-  {
-    id: 10,
-    title: "Mobile App Development with React Native",
-    description: "Build cross-platform mobile applications using React Native for iOS and Android.",
-    instructor: "Sophie Martin",
-    category: "Mobile Development",
-    difficulty: "Intermediate",
-    duration: "26 hours",
-    modules: 13,
-    students: 9200,
-    rating: 4.7,
-    reviews: 1120,
-    tags: ["React Native", "Mobile", "JavaScript"],
-    bestseller: false,
-    isNew: false,
-    lastUpdated: "2026-02-05",
-  },
-  {
-    id: 11,
-    title: "Cybersecurity Fundamentals",
-    description: "Learn essential cybersecurity concepts, ethical hacking, and security best practices.",
-    instructor: "Kevin Mitnick",
-    category: "Security",
-    difficulty: "Beginner",
-    duration: "24 hours",
-    modules: 10,
-    students: 18500,
-    rating: 4.8,
-    reviews: 2450,
-    tags: ["Security", "Hacking", "Networks"],
-    bestseller: true,
-    isNew: false,
-    lastUpdated: "2026-02-14",
-  },
-  {
-    id: 12,
-    title: "GraphQL API Development",
-    description: "Master GraphQL API development with Node.js, Apollo Server, and database integration.",
-    instructor: "Eve Porcello",
-    category: "Web Development",
-    difficulty: "Intermediate",
-    duration: "14 hours",
-    modules: 7,
-    students: 4300,
-    rating: 4.6,
-    reviews: 580,
-    tags: ["GraphQL", "API", "Node.js"],
-    bestseller: false,
-    isNew: true,
-    lastUpdated: "2026-02-19",
-  },
-];
 
 // Categories for filtering
 const categories = [
@@ -292,21 +87,28 @@ const categoryDetails: Record<string, { color: string; bgColor: string }> = {
 
 // Course Card Component
 interface CourseCardProps {
-  course: typeof mockCourses[0];
+  course: BrowseCourse;
   isFavorite: boolean;
   onToggleFavorite: () => void;
   viewMode: "grid" | "list";
 }
 
 function CourseCard({ course, isFavorite, onToggleFavorite, viewMode }: CourseCardProps) {
-
   if (viewMode === "list") {
     return (
       <Card className="overflow-hidden hover:shadow-lg transition-all group">
         <div className="flex flex-col sm:flex-row">
           {/* Course Image/Thumbnail */}
           <div className="relative w-full sm:w-48 h-40 sm:h-auto shrink-0 bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-            <IconBook className="size-12 text-primary/40" />
+            {course.thumbnail ? (
+              <img
+                src={course.thumbnail}
+                alt={course.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <IconBook className="size-12 text-primary/40" />
+            )}
             {course.bestseller && (
               <Badge className="absolute top-3 left-3 bg-amber-500 hover:bg-amber-500">
                 Bestseller
@@ -400,7 +202,15 @@ function CourseCard({ course, isFavorite, onToggleFavorite, viewMode }: CourseCa
     <Card className="overflow-hidden hover:shadow-lg transition-all group h-full flex flex-col">
       {/* Course Image/Thumbnail */}
       <div className="relative h-40 bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-        <IconBook className="size-16 text-primary/30" />
+        {course.thumbnail ? (
+          <img
+            src={course.thumbnail}
+            alt={course.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <IconBook className="size-16 text-primary/30" />
+        )}
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex gap-2">
@@ -500,71 +310,39 @@ export function CourseBrowsePage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState("All Levels");
   const [sortBy, setSortBy] = useState("popular");
   const [showFilters, setShowFilters] = useState(true);
-  const [favorites, setFavorites] = useState<number[]>([]);
-
+  
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const coursesPerPage = 9;
 
-  // Filter and sort courses
-  const filteredCourses = useMemo(() => {
-    let result = [...mockCourses];
+  // Favorites
+  const { favorites, toggleFavorite, isLoaded: favoritesLoaded } = useFavorites();
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (course) =>
-          course.title.toLowerCase().includes(query) ||
-          course.description.toLowerCase().includes(query) ||
-          course.instructor.toLowerCase().includes(query) ||
-          course.tags.some((tag) => tag.toLowerCase().includes(query))
-      );
-    }
+  // Fetch courses using TanStack Query
+  const { 
+    data: browseData, 
+    isLoading, 
+    error,
+    refetch 
+  } = useBrowseCourses({
+    search: searchQuery || undefined,
+    category: selectedCategory !== "All Categories" ? selectedCategory : undefined,
+    level: selectedDifficulty !== "All Levels" ? selectedDifficulty : undefined,
+    sortBy: sortBy as "popular" | "rating" | "newest",
+    page: currentPage,
+    limit: coursesPerPage,
+  });
 
-    // Category filter
-    if (selectedCategory !== "All Categories") {
-      result = result.filter((course) => course.category === selectedCategory);
-    }
+  // Fetch featured courses
+  const { data: featuredCourses = [] } = useFeaturedCourses(3);
 
-    // Difficulty filter
-    if (selectedDifficulty !== "All Levels") {
-      result = result.filter((course) => course.difficulty === selectedDifficulty);
-    }
+  // Fetch categories
+  const { data: categoriesData = [] } = useCategories();
 
-
-
-    // Sort
-    switch (sortBy) {
-      case "popular":
-        result.sort((a, b) => b.students - a.students);
-        break;
-      case "rating":
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-      case "newest":
-        result.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
-        break;
-    }
-
-    return result;
-  }, [searchQuery, selectedCategory, selectedDifficulty, sortBy]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
-  const paginatedCourses = filteredCourses.slice(
-    (currentPage - 1) * coursesPerPage,
-    currentPage * coursesPerPage
-  );
-
-  // Toggle favorite
-  const toggleFavorite = (courseId: number) => {
-    setFavorites((prev) =>
-      prev.includes(courseId)
-        ? prev.filter((id) => id !== courseId)
-        : [...prev, courseId]
-    );
-  };
+  // Get courses from query data
+  const courses = browseData?.courses || [];
+  const totalCourses = browseData?.pagination.total || 0;
+  const totalPages = browseData?.pagination.pages || 1;
 
   // Reset filters
   const resetFilters = () => {
@@ -575,15 +353,45 @@ export function CourseBrowsePage() {
     setCurrentPage(1);
   };
 
-  // Get featured courses for the banner
-  const featuredCourses = mockCourses.filter((c) => c.bestseller).slice(0, 3);
-
-  // Count active filters
+  // Get active filter count
   const activeFilterCount = [
     selectedCategory !== "All Categories",
     selectedDifficulty !== "All Levels",
     searchQuery.trim() !== "",
   ].filter(Boolean).length;
+
+  // Loading state
+  if (!favoritesLoaded || isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading courses...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+            <IconX className="size-8 text-destructive" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Failed to load courses</h3>
+          <p className="text-muted-foreground mb-4">
+            {error instanceof Error ? error.message : "Please try again later"}
+          </p>
+          <Button onClick={() => refetch()}>
+            <IconRefresh className="size-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -602,7 +410,7 @@ export function CourseBrowsePage() {
                 Explore Courses
               </h1>
               <p className="text-muted-foreground">
-                Discover {mockCourses.length}+ courses to advance your skills and career
+                Discover {totalCourses}+ courses to advance your skills and career
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -614,43 +422,45 @@ export function CourseBrowsePage() {
           </div>
 
           {/* Featured Courses */}
-          <div className="grid gap-4 md:grid-cols-3 mb-6">
-            {featuredCourses.map((course) => (
-              <Link
-                key={course.id}
-                to={`/courses/${course.id}`}
-                className="group relative overflow-hidden rounded-xl border bg-card hover:shadow-lg transition-all"
-              >
-                <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/70 to-primary/50" />
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
-                      <IconTrendingUp className="size-3 mr-1" />
-                      Bestseller
-                    </Badge>
-                    <div className="flex items-center gap-1 text-sm">
-                      <IconStar className="size-4 text-amber-500 fill-amber-500" />
-                      <span className="font-medium">{course.rating}</span>
+          {featuredCourses.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
+              {featuredCourses.map((course) => (
+                <Link
+                  key={course.id}
+                  to={`/courses/${course.id}`}
+                  className="group relative overflow-hidden rounded-xl border bg-card hover:shadow-lg transition-all"
+                >
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-primary via-primary/70 to-primary/50" />
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                        <IconTrendingUp className="size-3 mr-1" />
+                        Bestseller
+                      </Badge>
+                      <div className="flex items-center gap-1 text-sm">
+                        <IconStar className="size-4 text-amber-500 fill-amber-500" />
+                        <span className="font-medium">{course.rating}</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold line-clamp-1 group-hover:text-primary transition-colors">
+                      {course.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">{course.instructor}</p>
+                    <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <IconUsers className="size-3.5" />
+                        {course.students.toLocaleString()}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <IconClock className="size-3.5" />
+                        {course.duration}
+                      </span>
                     </div>
                   </div>
-                  <h3 className="font-semibold line-clamp-1 group-hover:text-primary transition-colors">
-                    {course.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">{course.instructor}</p>
-                  <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <IconUsers className="size-3.5" />
-                      {course.students.toLocaleString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <IconClock className="size-3.5" />
-                      {course.duration}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -808,7 +618,7 @@ export function CourseBrowsePage() {
         {/* Results Summary */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{filteredCourses.length}</span> courses
+            Showing <span className="font-medium text-foreground">{totalCourses}</span> courses
             {searchQuery && (
               <span>
                 {" "}
@@ -837,7 +647,7 @@ export function CourseBrowsePage() {
         </div>
 
         {/* Course Grid/List */}
-        {filteredCourses.length === 0 ? (
+        {courses.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <IconBook className="size-8 text-muted-foreground" />
@@ -852,7 +662,7 @@ export function CourseBrowsePage() {
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {paginatedCourses.map((course) => (
+            {courses.map((course) => (
               <CourseCard
                 key={course.id}
                 course={course}
@@ -864,7 +674,7 @@ export function CourseBrowsePage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {paginatedCourses.map((course) => (
+            {courses.map((course) => (
               <CourseCard
                 key={course.id}
                 course={course}
@@ -942,7 +752,8 @@ export function CourseBrowsePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {categories.slice(1).map((category) => {
               const details = categoryDetails[category] || { color: "text-primary", bgColor: "bg-primary/10" };
-              const count = mockCourses.filter(c => c.category === category).length;
+              const categoryData = categoriesData.find(c => c.category === category);
+              const count = categoryData?.count || 0;
 
               return (
                 <button

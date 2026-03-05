@@ -1,6 +1,205 @@
 const Course = require("../models/Course")
 
 /**
+ * Browse courses with search, filter, and pagination
+ * GET /api/courses/browse
+ */
+const browseCourses = async (req, res) => {
+  try {
+    const {
+      search,
+      category,
+      level,
+      sortBy = "popular",
+      page = 1,
+      limit = 9,
+    } = req.query
+
+    // Build filter object
+    const filter = { status: "published" }
+
+    // Search filter (title, description, instructor name, tags)
+    if (search && search.trim()) {
+      const searchQuery = search.trim()
+      // Use text search if available, otherwise use regex
+      filter.$or = [
+        { title: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+      ]
+    }
+
+    // Category filter
+    if (category && category !== "All Categories") {
+      filter.category = category
+    }
+
+    // Level filter
+    if (level && level !== "All Levels") {
+      filter.level = level
+    }
+
+    // Build sort object
+    let sortOptions = {}
+    switch (sortBy) {
+      case "popular":
+        sortOptions = { enrolledStudents: -1 }
+        break
+      case "rating":
+        sortOptions = { "rating.average": -1 }
+        break
+      case "newest":
+        sortOptions = { createdAt: -1 }
+        break
+      default:
+        sortOptions = { enrolledStudents: -1 }
+    }
+
+    // Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit)
+
+    // Execute query
+    const courses = await Course.find(filter)
+      .populate("instructor", "name email profile_image")
+      .sort(sortOptions)
+      .limit(parseInt(limit))
+      .skip(skip)
+      .select("-__v")
+
+    // Get total count for pagination
+    const total = await Course.countDocuments(filter)
+
+    // Transform courses to match frontend expected format
+    const transformedCourses = courses.map((course) => ({
+      id: course._id,
+      _id: course._id,
+      title: course.title,
+      description: course.description,
+      instructor: course.instructor?.name || "Unknown Instructor",
+      instructorId: course.instructor?._id,
+      category: course.category,
+      difficulty: course.level,
+      duration: course.duration || "N/A",
+      modules: course.modules?.length || 0,
+      students: course.enrolledStudents || 0,
+      rating: course.rating?.average || 0,
+      reviews: course.rating?.count || 0,
+      tags: course.learningObjectives?.slice(0, 3) || [],
+      bestseller: course.enrolledStudents >= 10000,
+      isNew: Date.now() - new Date(course.createdAt).getTime() < 30 * 24 * 60 * 60 * 1000,
+      lastUpdated: course.updatedAt,
+      thumbnail: course.thumbnail,
+      language: course.language,
+      prerequisites: course.prerequisites,
+      learningObjectives: course.learningObjectives,
+      hasCertificate: course.hasCertificate,
+    }))
+
+    res.status(200).json({
+      success: true,
+      data: {
+        courses: transformedCourses,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit)),
+        },
+      },
+    })
+  } catch (error) {
+    console.error("Browse courses error:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch courses",
+    })
+  }
+}
+
+/**
+ * Get featured courses (bestsellers)
+ * GET /api/courses/featured
+ */
+const getFeaturedCourses = async (req, res) => {
+  try {
+    const { limit = 3 } = req.query
+
+    const courses = await Course.find({
+      status: "published",
+      enrolledStudents: { $gte: 1000 },
+    })
+      .populate("instructor", "name email profile_image")
+      .sort({ enrolledStudents: -1 })
+      .limit(parseInt(limit))
+      .select("-__v")
+
+    const transformedCourses = courses.map((course) => ({
+      id: course._id,
+      _id: course._id,
+      title: course.title,
+      description: course.description,
+      instructor: course.instructor?.name || "Unknown Instructor",
+      instructorId: course.instructor?._id,
+      category: course.category,
+      difficulty: course.level,
+      duration: course.duration || "N/A",
+      modules: course.modules?.length || 0,
+      students: course.enrolledStudents || 0,
+      rating: course.rating?.average || 0,
+      reviews: course.rating?.count || 0,
+      lastUpdated: course.updatedAt,
+    }))
+
+    res.status(200).json({
+      success: true,
+      data: transformedCourses,
+    })
+  } catch (error) {
+    console.error("Get featured courses error:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch featured courses",
+    })
+  }
+}
+
+/**
+ * Get all categories with course counts
+ * GET /api/courses/categories
+ */
+const getCategories = async (req, res) => {
+  try {
+    const categories = await Course.aggregate([
+      { $match: { status: "published" } },
+      {
+        $group: {
+          _id: "$category",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          category: "$_id",
+          count: 1,
+        },
+      },
+      { $sort: { count: -1 } },
+    ])
+
+    res.status(200).json({
+      success: true,
+      data: categories,
+    })
+  } catch (error) {
+    console.error("Get categories error:", error)
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch categories",
+    })
+  }
+}
+
+/**
  * Create a new course
  * POST /api/courses
  */
@@ -158,16 +357,25 @@ const getCourse = async (req, res) => {
       })
     }
 
-    // Check if user is instructor or course is published
-    if (
-      course.instructor._id.toString() !== req.user._id &&
-      course.status !== "published" &&
-      req.user.role !== "Admin"
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied",
-      })
+    // Allow public access to published courses
+    if (course.status !== "published") {
+      // If course is not published, only allow instructor or admin to access
+      if (!req.user) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. This course is not published.",
+        })
+      }
+
+      if (
+        course.instructor._id.toString() !== req.user._id &&
+        req.user.role !== "Admin"
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied",
+        })
+      }
     }
 
     res.status(200).json({
@@ -511,6 +719,9 @@ const deleteCourse = async (req, res) => {
 }
 
 module.exports = {
+  browseCourses,
+  getFeaturedCourses,
+  getCategories,
   createCourse,
   getInstructorCourses,
   getCourse,

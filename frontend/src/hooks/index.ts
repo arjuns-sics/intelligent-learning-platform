@@ -48,8 +48,14 @@ export { fetcher }
 // Auth hooks
 export { useAuth } from "./use-auth"
 
-// Course hooks
+// Favorites hook
+export { useFavorites } from "./use-favorites"
+
+// Course hooks (learner-facing)
 export {
+  useBrowseCourses,
+  useFeaturedCourses,
+  useCategories,
   useInstructorCourses,
   useCourse,
   useCreateCourse,

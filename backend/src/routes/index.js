@@ -22,6 +22,9 @@ router.get("/v1", (req, res) => {
         password: "/auth/password (requires authentication)",
       },
       courses: {
+        browse: "/courses/browse (GET, public - search, filter, paginate courses)",
+        featured: "/courses/featured (GET, public - get bestseller courses)",
+        categories: "/courses/categories (GET, public - get categories with counts)",
         create: "/courses (POST, requires Instructor role)",
         "my-courses": "/courses/instructor/my-courses (GET, requires Instructor role)",
         "get-course": "/courses/:id (GET)",

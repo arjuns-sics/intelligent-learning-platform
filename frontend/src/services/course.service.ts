@@ -95,6 +95,56 @@ export interface Course {
   updatedAt: string;
 }
 
+// Types for course browsing (learner-facing)
+export interface BrowseCourse {
+  id: string;
+  _id: string;
+  title: string;
+  description: string;
+  instructor: string;
+  instructorId?: string;
+  category: string;
+  difficulty: string;
+  duration: string;
+  modules: number;
+  students: number;
+  rating: number;
+  reviews: number;
+  tags: string[];
+  bestseller: boolean;
+  isNew: boolean;
+  lastUpdated: string;
+  thumbnail: string | null;
+  language: string;
+  prerequisites: string[];
+  learningObjectives: string[];
+  hasCertificate: boolean;
+}
+
+export interface CategoryInfo {
+  category: string;
+  count: number;
+}
+
+export interface BrowseCoursesParams {
+  search?: string;
+  category?: string;
+  level?: string;
+  sortBy?: "popular" | "rating" | "newest";
+  page?: number;
+  limit?: number;
+}
+
+export interface BrowseCoursesResponse {
+  courses: BrowseCourse[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
 export interface CreateCourseData {
   title: string;
   subtitle?: string;
@@ -126,6 +176,44 @@ export interface CoursesResponse {
     limit: number;
     pages: number;
   };
+}
+
+/**
+ * Browse courses with search, filter, and pagination
+ */
+export async function browseCourses(
+  params?: BrowseCoursesParams
+): Promise<ApiResponse<BrowseCoursesResponse>> {
+  const queryParams = new URLSearchParams();
+
+  if (params?.search) queryParams.append("search", params.search);
+  if (params?.category) queryParams.append("category", params.category);
+  if (params?.level) queryParams.append("level", params.level);
+  if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+
+  const queryString = queryParams.toString();
+  const endpoint = `/courses/browse${queryString ? `?${queryString}` : ""}`;
+
+  return apiClient.get<BrowseCoursesResponse>(endpoint);
+}
+
+/**
+ * Get featured courses (bestsellers)
+ */
+export async function getFeaturedCourses(
+  limit?: number
+): Promise<ApiResponse<BrowseCourse[]>> {
+  const endpoint = limit ? `/courses/featured?limit=${limit}` : "/courses/featured";
+  return apiClient.get<BrowseCourse[]>(endpoint);
+}
+
+/**
+ * Get all categories with course counts
+ */
+export async function getCategories(): Promise<ApiResponse<CategoryInfo[]>> {
+  return apiClient.get<CategoryInfo[]>("/courses/categories");
 }
 
 /**

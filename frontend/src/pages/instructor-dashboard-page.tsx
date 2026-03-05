@@ -554,7 +554,7 @@ export function InstructorDashboardPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem asChild>
-                                <Link to={`/courses/${course._id}`} className="flex items-center">
+                                <Link to={`/courses/${course._id}/instructor`} className="flex items-center">
                                   <IconEye className="size-4 mr-2" />
                                   View
                                 </Link>

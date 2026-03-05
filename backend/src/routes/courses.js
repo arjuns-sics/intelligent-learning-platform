@@ -1,6 +1,9 @@
 const express = require("express")
 const router = express.Router()
 const {
+  browseCourses,
+  getFeaturedCourses,
+  getCategories,
   createCourse,
   getInstructorCourses,
   getCourse,
@@ -9,9 +12,30 @@ const {
   publishCourse,
   deleteCourse,
 } = require("../controllers/courseController")
-const { authenticate, authorize } = require("../middleware/auth")
+const { authenticate, authorize, optionalAuth } = require("../middleware/auth")
 
-// All routes require authentication
+/**
+ * @route   GET /api/courses/browse
+ * @desc    Browse courses with search, filter, and pagination (public)
+ * @access  Public
+ */
+router.get("/browse", optionalAuth, browseCourses)
+
+/**
+ * @route   GET /api/courses/featured
+ * @desc    Get featured courses (bestsellers)
+ * @access  Public
+ */
+router.get("/featured", optionalAuth, getFeaturedCourses)
+
+/**
+ * @route   GET /api/courses/categories
+ * @desc    Get all categories with course counts
+ * @access  Public
+ */
+router.get("/categories", optionalAuth, getCategories)
+
+// All routes below require authentication
 router.use(authenticate)
 
 /**
@@ -33,7 +57,7 @@ router.get("/instructor/my-courses", authorize("Instructor", "Admin"), getInstru
  * @desc    Get a single course by ID
  * @access  Public (for published courses), Private (for instructor's own courses)
  */
-router.get("/:id", getCourse)
+router.get("/:id", optionalAuth, getCourse)
 
 /**
  * @route   PUT /api/courses/:id
