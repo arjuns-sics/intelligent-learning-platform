@@ -27,6 +27,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   IconBook,
   IconUsers,
   IconChartBar,
@@ -49,7 +59,7 @@ import {
   IconLoader2,
   IconCheck,
 } from "@tabler/icons-react";
-import { useAuth, useInstructorCourses, useCourseStudents } from "@/hooks";
+import { useAuth, useInstructorCourses, useCourseStudents, useDeleteCourse } from "@/hooks";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -64,12 +74,16 @@ export function InstructorDashboardPage() {
   const { user, role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
 
   // Fetch instructor's courses from API
-  const { data: coursesData, isLoading: isLoadingCourses, error } = useInstructorCourses({
+  const { data: coursesData, isLoading: isLoadingCourses, error, refetch } = useInstructorCourses({
     limit: 50,
     page: 1,
   });
+
+  // Delete course mutation
+  const deleteCourseMutation = useDeleteCourse();
 
   // Get the first published course by default for student view
   const courses = coursesData?.data?.courses || [];
@@ -84,6 +98,19 @@ export function InstructorDashboardPage() {
 
   // Fetch students for selected course
   const { data: studentsData, isLoading: isLoadingStudents } = useCourseStudents(selectedCourseId);
+
+  // Handle course deletion
+  const handleDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    
+    try {
+      await deleteCourseMutation.mutateAsync(courseToDelete);
+      await refetch();
+      setCourseToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete course:", error);
+    }
+  };
 
   // Get tab from URL query params, default to "overview"
   const getInitialTab = () => {
@@ -465,7 +492,10 @@ export function InstructorDashboardPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive">
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => setCourseToDelete(course._id)}
+                              >
                                 <IconTrash className="size-4 mr-2" />
                                 Delete
                               </DropdownMenuItem>
@@ -877,6 +907,39 @@ export function InstructorDashboardPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Course Confirmation Dialog */}
+      <AlertDialog open={!!courseToDelete} onOpenChange={() => setCourseToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the course
+              and all associated data including modules, lessons, quizzes, and student enrollments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCourse}
+              disabled={deleteCourseMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteCourseMutation.isPending ? (
+                <>
+                  <IconLoader2 className="size-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <IconTrash className="size-4 mr-2" />
+                  Delete Course
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
