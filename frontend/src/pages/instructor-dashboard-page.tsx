@@ -45,8 +45,9 @@ import {
   IconTrash,
   IconSettings,
   IconArrowRight,
+  IconLoader2,
 } from "@tabler/icons-react";
-import { useAuth } from "@/hooks";
+import { useAuth, useInstructorCourses } from "@/hooks";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -55,6 +56,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatDistanceToNow } from "date-fns";
 
 // Mock data for the instructor dashboard
 const mockCourses = [
@@ -127,6 +129,12 @@ const mockNotifications = [
 export function InstructorDashboardPage() {
   const { user, role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Fetch instructor's courses from API
+  const { data: coursesData, isLoading: isLoadingCourses, error } = useInstructorCourses({
+    limit: 50,
+    page: 1,
+  });
 
   // Get tab from URL query params, default to "overview"
   const getInitialTab = () => {
@@ -136,6 +144,11 @@ export function InstructorDashboardPage() {
     }
     return "overview";
   };
+
+  // Extract courses from API response
+  const courses = coursesData?.data?.courses || [];
+  const totalCourses = coursesData?.data?.pagination?.total || 0;
+  const publishedCourses = courses.filter(c => c.status === "published").length;
 
   return (
     <div className="container py-8 px-4 md:px-6 max-w-7xl mx-auto">
@@ -185,10 +198,12 @@ export function InstructorDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{mockAnalytics.totalStudents}</div>
+            <div className="text-3xl font-bold">
+              {courses.reduce((acc, c) => acc + (c.enrolledStudents || 0), 0)}
+            </div>
             <div className="flex items-center gap-1 mt-1">
               <IconTrendingUp className="size-3.5 text-green-500" />
-              <p className="text-xs text-green-600 dark:text-green-400">+12% from last month</p>
+              <p className="text-xs text-green-600 dark:text-green-400">Total enrolled</p>
             </div>
           </CardContent>
         </Card>
@@ -202,9 +217,9 @@ export function InstructorDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{mockAnalytics.totalCourses}</div>
+            <div className="text-3xl font-bold">{totalCourses}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mockCourses.filter(c => c.status === "Published").length} published
+              {publishedCourses} published
             </p>
           </CardContent>
         </Card>
@@ -218,9 +233,14 @@ export function InstructorDashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{mockAnalytics.averageRating}</div>
+            <div className="text-3xl font-bold">
+              {courses.length > 0 
+                ? (courses.reduce((acc, c) => acc + (c.rating?.average || 0), 0) / courses.length).toFixed(1)
+                : "—"
+              }
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Based on 89 reviews
+              {courses.reduce((acc, c) => acc + (c.rating?.count || 0), 0)} reviews
             </p>
           </CardContent>
         </Card>
@@ -365,47 +385,53 @@ export function InstructorDashboardPage() {
           </div>
 
           {/* Top Performing Courses */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Top Performing Courses</CardTitle>
-                  <CardDescription>Your most popular courses this month</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/courses">
-                    View All <IconArrowRight className="size-4 ml-1" />
-                  </Link>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                {mockCourses.filter(c => c.status === "Published").slice(0, 3).map((course, index) => (
-                  <div
-                    key={course.id}
-                    className="relative p-4 rounded-xl border border-border/50 hover:border-border transition-colors group"
-                  >
-                    <div className="absolute top-3 right-3">
-                      <Badge variant="outline" className="font-mono">#{index + 1}</Badge>
-                    </div>
-                    <div className="w-10 h-10 rounded-lg bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-3">
-                      <IconBook className="size-5 text-primary" />
-                    </div>
-                    <h3 className="font-semibold line-clamp-1">{course.title}</h3>
-                    <p className="text-sm text-muted-foreground">{course.students} students</p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Badge variant="secondary" className="text-xs">
-                        <IconStar className="size-3 mr-1 text-amber-500" />
-                        {course.rating}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">{course.category}</Badge>
-                    </div>
+          {courses.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Top Performing Courses</CardTitle>
+                    <CardDescription>Your most popular courses this month</CardDescription>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to="/dashboard?tab=courses">
+                      View All <IconArrowRight className="size-4 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  {courses
+                    .filter(c => c.status === "published")
+                    .sort((a, b) => (b.enrolledStudents || 0) - (a.enrolledStudents || 0))
+                    .slice(0, 3)
+                    .map((course, index) => (
+                      <div
+                        key={course._id}
+                        className="relative p-4 rounded-xl border border-border/50 hover:border-border transition-colors group"
+                      >
+                        <div className="absolute top-3 right-3">
+                          <Badge variant="outline" className="font-mono">#{index + 1}</Badge>
+                        </div>
+                        <div className="w-10 h-10 rounded-lg bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-3">
+                          <IconBook className="size-5 text-primary" />
+                        </div>
+                        <h3 className="font-semibold line-clamp-1">{course.title}</h3>
+                        <p className="text-sm text-muted-foreground">{course.enrolledStudents || 0} students</p>
+                        <div className="flex items-center gap-2 mt-3">
+                          <Badge variant="secondary" className="text-xs">
+                            <IconStar className="size-3 mr-1 text-amber-500" />
+                            {course.rating?.average?.toFixed(1) || "—"}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">{course.category}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Courses Tab */}
@@ -413,7 +439,9 @@ export function InstructorDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold">Your Courses</h2>
-              <p className="text-sm text-muted-foreground">Manage and create courses</p>
+              <p className="text-sm text-muted-foreground">
+                Manage and create courses
+              </p>
             </div>
             <Button asChild>
               <Link to="/courses/create">
@@ -423,96 +451,135 @@ export function InstructorDashboardPage() {
             </Button>
           </div>
 
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-75">Course</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Students</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Rating</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead className="w-12.5"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockCourses.map((course) => (
-                    <TableRow key={course.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                            <IconBook className="size-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium line-clamp-1">{course.title}</p>
-                            <p className="text-xs text-muted-foreground">{course.category}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={course.status === "Published" ? "default" : "secondary"}>
-                          {course.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <IconUsers className="size-4 text-muted-foreground" />
-                          {course.students}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="w-24">
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <span>{course.progress}%</span>
-                          </div>
-                          <Progress value={course.progress} className="h-1.5" />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {course.rating > 0 ? (
-                          <div className="flex items-center gap-1">
-                            <IconStar className="size-4 text-amber-500 fill-amber-500" />
-                            {course.rating}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {course.lastUpdated}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
-                              <IconDotsVertical className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <IconEye className="size-4 mr-2" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <IconEdit className="size-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              <IconTrash className="size-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+          {isLoadingCourses ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <IconLoader2 className="size-8 animate-spin text-primary" />
+                  <p className="text-muted-foreground">Loading your courses...</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : error ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <p className="text-destructive">Failed to load courses</p>
+                  <Button variant="outline" onClick={() => window.location.reload()}>
+                    Try Again
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : courses.length === 0 ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                    <IconBook className="size-8 text-muted-foreground" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium">No courses yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      Create your first course to get started
+                    </p>
+                  </div>
+                  <Button asChild>
+                    <Link to="/courses/create">
+                      <IconPlus className="size-4 mr-2" />
+                      Create Course
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-75">Course</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Students</TableHead>
+                      <TableHead>Rating</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                      <TableHead className="w-12.5"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {courses.map((course) => (
+                      <TableRow key={course._id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                              <IconBook className="size-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium line-clamp-1">{course.title}</p>
+                              <p className="text-xs text-muted-foreground">{course.category}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={course.status === "published" ? "default" : "secondary"}>
+                            {course.status === "published" ? "Published" : course.status === "draft" ? "Draft" : course.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <IconUsers className="size-4 text-muted-foreground" />
+                            {course.enrolledStudents || 0}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {course.rating?.average && course.rating.average > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <IconStar className="size-4 text-amber-500 fill-amber-500" />
+                              {course.rating.average.toFixed(1)}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDistanceToNow(new Date(course.updatedAt), { addSuffix: true })}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-8">
+                                <IconDotsVertical className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link to={`/courses/${course._id}`} className="flex items-center">
+                                  <IconEye className="size-4 mr-2" />
+                                  View
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link to={`/courses/${course._id}/edit`} className="flex items-center">
+                                  <IconEdit className="size-4 mr-2" />
+                                  Edit
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive">
+                                <IconTrash className="size-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Students Tab */}

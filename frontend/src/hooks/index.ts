@@ -47,3 +47,14 @@ export { fetcher }
 
 // Auth hooks
 export { useAuth } from "./use-auth"
+
+// Course hooks
+export {
+  useInstructorCourses,
+  useCourse,
+  useCreateCourse,
+  useUpdateCourse,
+  useSaveDraft,
+  usePublishCourse,
+  useDeleteCourse,
+} from "./use-queries"

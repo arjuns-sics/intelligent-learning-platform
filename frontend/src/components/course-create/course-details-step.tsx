@@ -51,10 +51,10 @@ const CATEGORIES = [
 ];
 
 const LEVELS = [
-  { value: "beginner", label: "Beginner", description: "No prior knowledge required" },
-  { value: "intermediate", label: "Intermediate", description: "Basic understanding needed" },
-  { value: "advanced", label: "Advanced", description: "Strong foundation required" },
-  { value: "all-levels", label: "All Levels", description: "Suitable for everyone" },
+  { value: "Beginner", label: "Beginner", description: "No prior knowledge required" },
+  { value: "Intermediate", label: "Intermediate", description: "Basic understanding needed" },
+  { value: "Advanced", label: "Advanced", description: "Strong foundation required" },
+  { value: "All Levels", label: "All Levels", description: "Suitable for everyone" },
 ];
 
 const LANGUAGES = [
@@ -189,7 +189,7 @@ export function CourseDetailsStep({
             </SelectTrigger>
             <SelectContent>
               {CATEGORIES.map((category) => (
-                <SelectItem key={category} value={category.toLowerCase().replace(/\s+/g, "-")}>
+                <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>
               ))}
@@ -231,7 +231,7 @@ export function CourseDetailsStep({
             </SelectTrigger>
             <SelectContent>
               {LANGUAGES.map((language) => (
-                <SelectItem key={language} value={language.toLowerCase()}>
+                <SelectItem key={language} value={language}>
                   {language}
                 </SelectItem>
               ))}

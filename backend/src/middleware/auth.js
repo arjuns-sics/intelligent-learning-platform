@@ -6,6 +6,7 @@ const authenticate = (req, res, next) => {
     const authHeader = req.headers.authorization
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("Auth error: No Bearer token in header", { authHeader })
       return res.status(401).json({
         success: false,
         message: "Access denied. No token provided.",
@@ -15,11 +16,18 @@ const authenticate = (req, res, next) => {
     const token = authHeader.split(" ")[1]
 
     if (!token) {
+      console.error("Auth error: Token is empty after split")
       return res.status(401).json({
         success: false,
         message: "Access denied. Invalid token format.",
       })
     }
+
+    // Debug: Log token format (first 50 chars only for security)
+    console.log("Token received (first 50 chars):", token.substring(0, 50) + "...")
+    console.log("Token length:", token.length)
+    console.log("JWT_SECRET set:", !!process.env.JWT_SECRET)
+    console.log("JWT_SECRET value:", process.env.JWT_SECRET)
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
@@ -33,6 +41,13 @@ const authenticate = (req, res, next) => {
 
     next()
   } catch (error) {
+    console.error("Authentication error:", {
+      name: error.name,
+      message: error.message,
+      hasToken: !!req.headers.authorization,
+      jwtSecretSet: !!process.env.JWT_SECRET,
+    })
+
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,

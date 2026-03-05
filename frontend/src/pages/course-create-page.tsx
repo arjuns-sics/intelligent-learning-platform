@@ -33,6 +33,8 @@ import { CourseModulesStep } from "@/components/course-create/course-modules-ste
 import { CourseQuizzesStep } from "@/components/course-create/course-quizzes-step.tsx";
 import { CourseAssignmentsStep } from "@/components/course-create/course-assignments-step.tsx";
 import { CourseSettingsStep } from "@/components/course-create/course-settings-step.tsx";
+import { useCreateCourse, useSaveDraft, usePublishCourse } from "@/hooks/use-queries";
+import { toast } from "sonner";
 
 // Constants
 const STEPS = [
@@ -42,11 +44,6 @@ const STEPS = [
   { id: 4, title: "Assignments", description: "Practical work", icon: IconClipboardCheck },
   { id: 5, title: "Settings", description: "Pricing & publish", icon: IconSettings },
 ] as const;
-
-const API_TIMEOUTS = {
-  SAVE_DRAFT: 1500,
-  PUBLISH: 2000,
-} as const;
 
 const STORAGE_KEY = "course-create-draft";
 
@@ -237,8 +234,13 @@ export function CourseCreatePage() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, dispatch] = useReducer(formReducer, initialFormData);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
+
+  // TanStack Query hooks
+  const createCourseMutation = useCreateCourse();
+  const saveDraftMutation = useSaveDraft(createdCourseId!);
+  const publishCourseMutation = usePublishCourse();
 
   // Load draft from localStorage on mount
   useEffect(() => {
@@ -253,7 +255,7 @@ export function CourseCreatePage() {
     }
   }, []);
 
-  // Auto-save draft to localStorage
+  // Auto-save draft to localStorage (not backend)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       try {
@@ -329,26 +331,34 @@ export function CourseCreatePage() {
   }, [currentStep, formData]);
 
   const handleSaveDraft = useCallback(async () => {
-    setIsSubmitting(true);
     try {
-      // Simulate API call with constant
-      await new Promise((resolve) => setTimeout(resolve, API_TIMEOUTS.SAVE_DRAFT));
-      localStorage.removeItem(STORAGE_KEY); // Clear saved draft after successful save
-      navigate("/dashboard");
+      if (createdCourseId) {
+        // Course already exists, update draft
+        await saveDraftMutation.mutateAsync(formData);
+        toast.success("Draft saved successfully");
+      } else {
+        // Create new course as draft
+        const response = await createCourseMutation.mutateAsync({
+          ...formData,
+          published: false,
+        });
+        if (response.data) {
+          setCreatedCourseId(response.data._id);
+          toast.success("Draft created successfully");
+        }
+      }
     } catch (error) {
       console.error("Failed to save draft:", error);
-      // In production, show error toast to user
-    } finally {
-      setIsSubmitting(false);
+      toast.error("Failed to save draft. Please try again.");
     }
-  }, [navigate]);
+  }, [formData, createdCourseId, createCourseMutation, saveDraftMutation]);
 
   const handlePublish = useCallback(async () => {
     // Validate all steps before publishing
     const allErrors: string[] = [];
     STEPS.forEach((step) => {
-      const result = validateStep(step.id, formData);
-      allErrors.push(...result.errors);
+      const validation = validateStep(step.id, formData);
+      allErrors.push(...validation.errors);
     });
 
     if (allErrors.length > 0) {
@@ -356,19 +366,29 @@ export function CourseCreatePage() {
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      // Simulate API call with constant
-      await new Promise((resolve) => setTimeout(resolve, API_TIMEOUTS.PUBLISH));
+      if (createdCourseId) {
+        // Update course and publish
+        await publishCourseMutation.mutateAsync(createdCourseId);
+        toast.success("Course published successfully");
+      } else {
+        // Create and publish course in one step
+        const response = await createCourseMutation.mutateAsync({
+          ...formData,
+          published: true,
+        });
+        if (response.data) {
+          toast.success("Course published successfully");
+        }
+      }
       localStorage.removeItem(STORAGE_KEY);
       dispatch({ type: "RESET_FORM" });
       navigate("/dashboard");
     } catch (error) {
       console.error("Failed to publish course:", error);
-    } finally {
-      setIsSubmitting(false);
+      toast.error("Failed to publish course. Please try again.");
     }
-  }, [navigate, formData]);
+  }, [formData, createdCourseId, createCourseMutation, publishCourseMutation, navigate]);
 
   // Render step content based on current step
   const renderStepContent = useCallback(() => {
@@ -441,16 +461,19 @@ export function CourseCreatePage() {
               <Button
                 variant="outline"
                 onClick={handleSaveDraft}
-                disabled={isSubmitting}
+                disabled={createCourseMutation.isPending || saveDraftMutation.isPending}
               >
-                {isSubmitting ? (
+                {createCourseMutation.isPending || saveDraftMutation.isPending ? (
                   <IconLoader2 className="size-4 mr-2 animate-spin" />
                 ) : null}
                 Save Draft
               </Button>
               {currentStep === STEPS.length && (
-                <Button onClick={handlePublish} disabled={isSubmitting}>
-                  {isSubmitting ? (
+                <Button 
+                  onClick={handlePublish} 
+                  disabled={createCourseMutation.isPending || publishCourseMutation.isPending}
+                >
+                  {createCourseMutation.isPending || publishCourseMutation.isPending ? (
                     <IconLoader2 className="size-4 mr-2 animate-spin" />
                   ) : (
                     <IconSparkles className="size-4 mr-2" />
@@ -651,10 +674,18 @@ export function CourseCreatePage() {
             </Button>
           ) : (
             <div className="flex gap-3">
-              <Button variant="outline" onClick={handleSaveDraft}>
+              <Button 
+                variant="outline" 
+                onClick={handleSaveDraft}
+                disabled={createCourseMutation.isPending || saveDraftMutation.isPending}
+              >
                 Save Draft
               </Button>
-              <Button onClick={handlePublish} className="gap-2">
+              <Button 
+                onClick={handlePublish} 
+                disabled={createCourseMutation.isPending || publishCourseMutation.isPending}
+                className="gap-2"
+              >
                 <IconSparkles className="size-4" />
                 Publish Course
               </Button>

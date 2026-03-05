@@ -67,7 +67,15 @@ export interface ChangePasswordData {
 export const tokenManager = {
   get: (): string | null => {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
+      // Handle JSON-stringified tokens from atomWithStorage
+      try {
+        const parsed = JSON.parse(token);
+        return typeof parsed === 'string' ? parsed : token;
+      } catch {
+        return token;
+      }
     } catch {
       return null;
     }

@@ -2,13 +2,13 @@ import { Outlet, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useNavigate } from "react-router-dom";
-import { 
-  Breadcrumb, 
-  BreadcrumbItem, 
-  BreadcrumbLink, 
-  BreadcrumbList, 
-  BreadcrumbPage, 
-  BreadcrumbSeparator 
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,11 +20,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks";
-import { 
-  IconUser, 
-  IconSettings, 
-  IconLogout, 
-  IconDashboard, 
+import {
+  IconUser,
+  IconSettings,
+  IconLogout,
+  IconDashboard,
   IconChevronDown,
   IconBook,
   IconUsers,
@@ -33,6 +33,7 @@ import {
   IconCertificate,
   IconPlus
 } from "@tabler/icons-react";
+import { Toaster } from "sonner";
 
 export function Layout() {
   const location = useLocation();
@@ -352,6 +353,9 @@ export function Layout() {
           </div>
         </div>
       </footer>
+
+      {/* Toaster for notifications */}
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
