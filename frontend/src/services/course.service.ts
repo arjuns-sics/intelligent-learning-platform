@@ -3,7 +3,9 @@
  * Handles all course-related API calls
  */
 
-import apiClient, { type ApiResponse } from "./api-client";
+import apiClient, { type ApiResponse, tokenManager } from "./api-client";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 // Types
 export interface Lesson {
@@ -187,10 +189,19 @@ export interface GenerateQuizzesData {
   numQuizzes?: number;
   questionsPerQuiz?: number;
   moduleId?: string;
+  includeTranscripts?: boolean; // Option to include YouTube video transcripts
+}
+
+export interface GenerateQuizzesMetadata {
+  transcriptsUsed: boolean;
+  totalVideos: number;
+  processedVideos: number;
+  skippedVideos: number;
 }
 
 export interface GenerateQuizzesResponse {
   quizzes: Quiz[];
+  metadata?: GenerateQuizzesMetadata;
 }
 
 export interface CoursesResponse {
@@ -326,7 +337,41 @@ export async function deleteCourse(courseId: string): Promise<ApiResponse<null>>
 export async function generateQuizzes(
   data: GenerateQuizzesData
 ): Promise<ApiResponse<GenerateQuizzesResponse>> {
-  return apiClient.post<GenerateQuizzesResponse>("/courses/generate-quizzes", data);
+  // Use custom timeout of 2 minutes for quiz generation (it's a long-running operation)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes
+
+  // Get token using tokenManager which handles Jotai's atomWithStorage format
+  const authToken = tokenManager.get();
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/courses/generate-quizzes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authToken ? `Bearer ${authToken}` : "",
+      },
+      body: JSON.stringify(data),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to generate quizzes");
+    }
+
+    return response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Quiz generation timed out. This operation can take up to 2 minutes for courses with many videos.");
+    }
+    
+    throw error;
+  }
 }
 
 // Export types for use in components

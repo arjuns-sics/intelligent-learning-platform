@@ -24,9 +24,11 @@ import {
   IconBook,
   IconFlame,
   IconStar,
+  IconLoader2,
 } from "@tabler/icons-react";
-import { useMyEnrollments } from "@/hooks";
+import { useMyEnrollments, useStartQuiz, useSubmitQuiz } from "@/hooks";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Types
 interface QuizQuestion {
@@ -82,10 +84,31 @@ export function CourseQuizPage() {
     (e) => e.course._id === courseId
   ) as Enrollment | undefined;
 
+  // Quiz mutations
+  const startQuizMutation = useStartQuiz();
+  const submitQuizMutation = useSubmitQuiz();
+
   // Find the quiz
   const course = enrollment?.course;
-  const allQuizzes = course?.modules.flatMap((m) => m.quizzes || []) || [];
-  const quiz = allQuizzes.find((q) => q._id === quizId || q.title === quizId);
+  // Get quizzes from modules first, then fall back to course-level quizzes
+  const moduleQuizzes = course?.modules?.flatMap((m) => m.quizzes || []) || [];
+  const courseQuizzes = (course as any)?.quizzes || [];
+  const allQuizzes = moduleQuizzes.length > 0 ? moduleQuizzes : courseQuizzes;
+  const quiz = allQuizzes.find((q) => q._id === quizId || q.title === quizId || q._id?.toString() === quizId);
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Quiz Page Debug:", {
+      courseId,
+      quizId,
+      hasCourse: !!course,
+      moduleQuizzesCount: moduleQuizzes.length,
+      courseQuizzesCount: courseQuizzes.length,
+      allQuizzesCount: allQuizzes.length,
+      foundQuiz: !!quiz,
+      quizTitle: quiz?.title,
+    });
+  }, [courseId, quizId, course, moduleQuizzes.length, courseQuizzes.length, allQuizzes.length, quiz]);
 
   // Quiz state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -94,6 +117,8 @@ export function CourseQuizPage() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [quizStarted, setQuizStarted] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
 
   // Initialize quiz
   useEffect(() => {
@@ -148,17 +173,40 @@ export function CourseQuizPage() {
   };
 
   // Submit quiz
-  const handleSubmitQuiz = () => {
-    if (!quiz) return;
+  const handleSubmitQuiz = async () => {
+    if (!quiz || !attemptId) return;
 
-    let correctCount = 0;
-    quiz.questions.forEach((question, index) => {
-      if (answers[index] === question.correctAnswer) {
-        correctCount++;
+    try {
+      const timeSpent = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+
+      const formattedAnswers = answers.map((answer) => ({
+        selectedAnswer: answer !== null ? answer : 0,
+      }));
+
+      const result = await submitQuizMutation.mutateAsync({
+        attemptId,
+        data: {
+          answers: formattedAnswers,
+          timeSpent,
+        },
+      });
+
+      if (result.data) {
+        setShowResults(true);
+        toast.success(
+          result.data.passed
+            ? "Quiz passed! Great job!"
+            : "Quiz submitted. Review your answers and try again if needed."
+        );
       }
-    });
-
-    setShowResults(true);
+    } catch (error) {
+      console.error("Failed to submit quiz:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to submit quiz. Please try again."
+      );
+    }
   };
 
   // Calculate results
@@ -191,9 +239,26 @@ export function CourseQuizPage() {
   };
 
   // Start quiz
-  const handleStartQuiz = () => {
-    setQuizStarted(true);
-    setTimeRemaining(quiz?.timeLimit ? quiz.timeLimit * 60 : 0);
+  const handleStartQuiz = async () => {
+    if (!quiz || !enrollment) return;
+
+    try {
+      const result = await startQuizMutation.mutateAsync({
+        quizId: quiz._id || quizId!,
+        courseId: courseId!,
+        enrollmentId: enrollment._id,
+      });
+
+      if (result.data) {
+        setAttemptId(result.data.attemptId);
+        setStartTime(Date.now());
+        setQuizStarted(true);
+        setTimeRemaining(quiz.timeLimit ? quiz.timeLimit * 60 : 0);
+      }
+    } catch (error) {
+      console.error("Failed to start quiz:", error);
+      toast.error("Failed to start quiz. Please try again.");
+    }
   };
 
   // Restart quiz
@@ -204,6 +269,8 @@ export function CourseQuizPage() {
     setShowResults(false);
     setQuizStarted(false);
     setSelectedAnswer(null);
+    setAttemptId(null);
+    setStartTime(null);
     setTimeRemaining(quiz.timeLimit ? quiz.timeLimit * 60 : 0);
   };
 
@@ -303,9 +370,23 @@ export function CourseQuizPage() {
                 </AlertDescription>
               </Alert>
 
-              <Button className="w-full" size="lg" onClick={handleStartQuiz}>
-                <IconAward className="size-4 mr-2" />
-                Start Quiz
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={handleStartQuiz}
+                disabled={startQuizMutation.isPending}
+              >
+                {startQuizMutation.isPending ? (
+                  <>
+                    <IconLoader2 className="size-4 mr-2 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <IconAward className="size-4 mr-2" />
+                    Start Quiz
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -506,12 +587,24 @@ export function CourseQuizPage() {
 
               <div className="flex gap-2">
                 {currentQuestionIndex === totalQuestions - 1 ? (
-                  <Button onClick={handleSubmitQuiz}>
-                    <IconCheck className="size-4 mr-2" />
-                    Submit Quiz
+                  <Button
+                    onClick={handleSubmitQuiz}
+                    disabled={submitQuizMutation.isPending}
+                  >
+                    {submitQuizMutation.isPending ? (
+                      <>
+                        <IconLoader2 className="size-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <IconCheck className="size-4 mr-2" />
+                        Submit Quiz
+                      </>
+                    )}
                   </Button>
                 ) : (
-                  <Button onClick={handleNext}>
+                  <Button onClick={handleNext} disabled={submitQuizMutation.isPending}>
                     Next
                     <IconArrowRight className="size-4 ml-2" />
                   </Button>

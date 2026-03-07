@@ -262,9 +262,12 @@ const getMyEnrollments = async (req, res) => {
       filter.status = status
     }
 
-    // Get enrollments with pagination
+    // Get enrollments with pagination - populate course with all fields including modules with quizzes/assignments
     const enrollments = await Enrollment.find(filter)
-      .populate("course", "title description thumbnail category level enrolledStudents rating duration modules hasCertificate")
+      .populate({
+        path: "course",
+        select: "title description thumbnail category level enrolledStudents rating duration modules hasCertificate quizzes assignments",
+      })
       .sort({ enrolledAt: -1 })
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit))
@@ -272,18 +275,36 @@ const getMyEnrollments = async (req, res) => {
     // Get total count
     const total = await Enrollment.countDocuments(filter)
 
-    // Transform enrollments
-    const transformedEnrollments = enrollments.map((enrollment) => ({
-      _id: enrollment._id,
-      course: enrollment.course.toObject({ virtuals: false }),
-      progress: enrollment.progress,
-      status: enrollment.status,
-      enrolledAt: enrollment.enrolledAt,
-      completedAt: enrollment.completedAt,
-      lastAccessedAt: enrollment.lastAccessedAt,
-      completedLessons: enrollment.completedLessons,
-      completedModules: enrollment.completedModules,
-    }))
+    // Transform enrollments - ensure modules have quizzes and assignments
+    const transformedEnrollments = enrollments.map((enrollment) => {
+      const courseObj = enrollment.course.toObject({ virtuals: false })
+      
+      // Ensure modules have quizzes and assignments arrays
+      if (courseObj.modules && Array.isArray(courseObj.modules)) {
+        courseObj.modules = courseObj.modules.map(module => ({
+          ...module,
+          quizzes: module.quizzes || [],
+          assignments: module.assignments || [],
+        }))
+      }
+      
+      // Include course-level quizzes and assignments for fallback
+      return {
+        _id: enrollment._id,
+        course: {
+          ...courseObj,
+          quizzes: courseObj.quizzes || [],
+          assignments: courseObj.assignments || [],
+        },
+        progress: enrollment.progress,
+        status: enrollment.status,
+        enrolledAt: enrollment.enrolledAt,
+        completedAt: enrollment.completedAt,
+        lastAccessedAt: enrollment.lastAccessedAt,
+        completedLessons: enrollment.completedLessons,
+        completedModules: enrollment.completedModules,
+      }
+    })
 
     res.status(200).json({
       success: true,

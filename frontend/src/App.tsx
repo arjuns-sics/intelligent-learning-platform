@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 
-import { LandingPage, LoginPage, SignupPage, ForgotPasswordPage, CourseCreatePage, CourseBrowsePage, CourseDetailPage, CourseEnrollPage, CourseEditPage, InstructorCourseViewPage, CourseLearnPage, CourseQuizPage } from "@/pages"
+import { LandingPage, LoginPage, SignupPage, ForgotPasswordPage, CourseCreatePage, CourseBrowsePage, CourseDetailPage, CourseEnrollPage, CourseEditPage, InstructorCourseViewPage, CourseLearnPage, CourseQuizPage, AssignmentSubmissionPage } from "@/pages"
 import { Layout } from "./components/layout"
 import { ProtectedRoute } from "./components/protected-route"
 import { DashboardRouter } from "./components/dashboard-router"
@@ -83,6 +83,15 @@ export function App() {
           element={
             <ProtectedRoute requiredRole="Student">
               <CourseQuizPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/learn/:courseId/assignment/:assignmentId"
+          element={
+            <ProtectedRoute requiredRole="Student">
+              <AssignmentSubmissionPage />
             </ProtectedRoute>
           }
         />

@@ -101,6 +101,11 @@ router.delete("/:id", authorize("Instructor", "Admin"), deleteCourse)
  * @desc    Generate quizzes using AI
  * @access  Private (Instructor)
  */
-router.post("/generate-quizzes", authorize("Instructor", "Admin"), generateQuizzesController)
+router.post("/generate-quizzes", authorize("Instructor", "Admin"), (req, res, next) => {
+  // Set custom timeout for AI quiz generation (2 minutes)
+  req.setTimeout(120000); // 2 minutes
+  res.setTimeout(120000); // 2 minutes
+  generateQuizzesController(req, res, next);
+})
 
 module.exports = router

@@ -14,6 +14,7 @@ const generateQuizzesController = async (req, res) => {
       numQuizzes,
       questionsPerQuiz,
       moduleId, // Optional: generate for specific module only
+      includeTranscripts = true, // New option to enable/disable transcript fetching
     } = req.body;
 
     // Validate required fields
@@ -38,6 +39,7 @@ const generateQuizzesController = async (req, res) => {
         courseTitle,
         module: targetModule,
         numQuestions: questionsPerQuiz || 5,
+        includeTranscripts,
       });
 
       if (!result.success) {
@@ -51,6 +53,7 @@ const generateQuizzesController = async (req, res) => {
         success: true,
         data: {
           quizzes: result.quiz ? [result.quiz] : [],
+          metadata: result.metadata,
         },
       });
     }
@@ -63,6 +66,7 @@ const generateQuizzesController = async (req, res) => {
       learningObjectives,
       numQuizzes: numQuizzes || 1,
       questionsPerQuiz: questionsPerQuiz || 5,
+      includeTranscripts,
     });
 
     if (!result.success) {
@@ -77,6 +81,7 @@ const generateQuizzesController = async (req, res) => {
       message: "Quizzes generated successfully",
       data: {
         quizzes: result.quizzes,
+        metadata: result.metadata,
       },
     });
   } catch (error) {

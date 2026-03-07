@@ -1,5 +1,7 @@
 const mongoose = require("mongoose")
 const lessonSchema = require("./Lesson")
+const quizSchema = require("./Quiz")
+const assignmentSchema = require("./Assignment")
 
 const moduleSchema = new mongoose.Schema(
   {
@@ -15,6 +17,14 @@ const moduleSchema = new mongoose.Schema(
     },
     lessons: {
       type: [lessonSchema],
+      default: [],
+    },
+    quizzes: {
+      type: [quizSchema],
+      default: [],
+    },
+    assignments: {
+      type: [assignmentSchema],
       default: [],
     },
     order: {

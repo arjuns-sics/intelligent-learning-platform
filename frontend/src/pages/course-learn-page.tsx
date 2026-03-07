@@ -31,6 +31,8 @@ import {
   IconTrophy,
   IconFlame,
   IconAlertCircle,
+  IconQuestionMark,
+  IconClipboardCheck,
 } from "@tabler/icons-react";
 import { useMyEnrollments, useUpdateProgress } from "@/hooks";
 import { cn } from "@/lib/utils";
@@ -82,6 +84,30 @@ interface Module {
   description?: string;
   lessons: Lesson[];
   order?: number;
+  quizzes?: Quiz[];
+  assignments?: Assignment[];
+}
+
+interface Quiz {
+  _id?: string;
+  title: string;
+  description?: string;
+  questions?: Array<{
+    question: string;
+    options: string[];
+    correctAnswer: number;
+  }>;
+  passingScore?: number;
+  timeLimit?: number;
+}
+
+interface Assignment {
+  _id?: string;
+  title: string;
+  description?: string;
+  instructions?: string;
+  dueDate?: string;
+  maxScore?: number;
 }
 
 interface Course {
@@ -119,6 +145,124 @@ export function CourseLearnPage() {
   const course = enrollment?.course;
   const modules = course?.modules || [];
 
+  // Simple debug - log on every render
+  console.log("=== COURSE LEARN PAGE RENDER ===", {
+    hasEnrollmentData: !!enrollmentsData,
+    enrollmentCount: enrollmentsData?.enrollments?.length,
+    foundEnrollment: !!enrollment,
+    courseTitle: course?.title,
+    hasQuizzes: !!(course as any)?.quizzes,
+    quizzesCount: (course as any)?.quizzes?.length,
+    modulesCount: modules.length,
+  });
+
+  // Distribute course-level quizzes to their respective modules based on moduleId
+  const getProcessedModules = () => {
+    const courseQuizzes = (course as any)?.quizzes || [];
+    const courseAssignments = (course as any)?.assignments || [];
+    
+    console.log("Processing modules with quizzes:", {
+      modulesCount: modules.length,
+      courseQuizzesCount: courseQuizzes.length,
+      courseAssignmentsCount: courseAssignments.length,
+      modules: modules.map(m => ({ id: m.id, _id: m._id, title: m.title })),
+      quizzes: courseQuizzes.map(q => ({ title: q.title, moduleId: q.moduleId })),
+    });
+    
+    // Create a map of moduleId to quizzes/assignments
+    const quizzesByModule = {};
+    const assignmentsByModule = {};
+    
+    // Distribute quizzes to their modules
+    courseQuizzes.forEach((quiz) => {
+      const moduleId = quiz.moduleId;
+      console.log("Processing quiz:", quiz.title, "moduleId:", moduleId);
+      if (moduleId) {
+        if (!quizzesByModule[moduleId]) {
+          quizzesByModule[moduleId] = [];
+        }
+        quizzesByModule[moduleId].push(quiz);
+      }
+    });
+    
+    // Distribute assignments to their modules
+    courseAssignments.forEach((assignment) => {
+      const moduleId = assignment.moduleId;
+      if (moduleId) {
+        if (!assignmentsByModule[moduleId]) {
+          assignmentsByModule[moduleId] = [];
+        }
+        assignmentsByModule[moduleId].push(assignment);
+      }
+    });
+    
+    console.log("Quizzes by module:", quizzesByModule);
+    
+    // Map modules with their quizzes and assignments
+    return modules.map((module, moduleIndex) => {
+      // Try multiple ID fields since modules might have id, _id, or neither
+      const moduleId = module.id || module._id;
+      const moduleIds = [module.id, module._id].filter(Boolean);
+      
+      console.log("Processing module:", module.title, "moduleId:", moduleId, "allIds:", moduleIds, "index:", moduleIndex);
+      
+      // Find quizzes that match any of the module's IDs
+      let moduleQuizzes = module.quizzes || [];
+      let moduleAssignments = module.assignments || [];
+      
+      // If no quizzes in module, check if any course-level quizzes match this module
+      if (moduleQuizzes.length === 0 && courseQuizzes.length > 0) {
+        // First try to match by moduleId
+        if (moduleIds.length > 0) {
+          moduleQuizzes = courseQuizzes.filter(q => {
+            const quizModuleId = q.moduleId;
+            const matches = moduleIds.includes(quizModuleId);
+            if (matches) {
+              console.log("✓ Matched quiz by ID:", q.title, "->", module.title);
+            }
+            return matches;
+          });
+        }
+        
+        // Fallback: If still no quizzes and this is the first module, assign quizzes that don't have a matching module
+        if (moduleQuizzes.length === 0 && moduleIndex === 0) {
+          // Find quizzes whose moduleId doesn't match any module
+          const allModuleIds = modules.flatMap(m => [m.id, m._id].filter(Boolean));
+          const unmatchedQuizzes = courseQuizzes.filter(q => {
+            const hasMatch = allModuleIds.includes(q.moduleId);
+            return !hasMatch;
+          });
+          if (unmatchedQuizzes.length > 0) {
+            console.log("✓ Assigning unmatched quizzes to first module:", unmatchedQuizzes.map(q => q.title));
+            moduleQuizzes = unmatchedQuizzes;
+          }
+        }
+      }
+      
+      // If no assignments in module, apply same logic
+      if (moduleAssignments.length === 0 && courseAssignments.length > 0) {
+        if (moduleIds.length > 0) {
+          moduleAssignments = courseAssignments.filter(a => moduleIds.includes(a.moduleId));
+        }
+        if (moduleAssignments.length === 0 && moduleIndex === 0) {
+          const allModuleIds = modules.flatMap(m => [m.id, m._id].filter(Boolean));
+          const unmatchedAssignments = courseAssignments.filter(a => !allModuleIds.includes(a.moduleId));
+          moduleAssignments = unmatchedAssignments;
+        }
+      }
+      
+      console.log("Module result:", module.title, "quizzes:", moduleQuizzes.length, "assignments:", moduleAssignments.length);
+      
+      return {
+        ...module,
+        quizzes: moduleQuizzes,
+        assignments: moduleAssignments,
+      };
+    });
+  };
+  
+  const processedModules = course ? getProcessedModules() : [];
+
   // Debug logging
   useEffect(() => {
     console.log("Course Learn Page Debug:", {
@@ -128,14 +272,39 @@ export function CourseLearnPage() {
       enrollmentsCount: enrollmentsData?.enrollments?.length,
       foundEnrollment: !!enrollment,
       courseTitle: course?.title,
-      modulesCount: modules.length,
-      allLessonsCount: modules.flatMap((m) => m.lessons).length,
-      modules: modules,
+      modulesCount: processedModules.length,
+      allLessonsCount: processedModules.flatMap((m) => m.lessons).length,
+      modulesWithQuizzes: processedModules.filter(m => m.quizzes && m.quizzes.length > 0).length,
+      modulesWithAssignments: processedModules.filter(m => m.assignments && m.assignments.length > 0).length,
+      courseLevelQuizzes: (course as any)?.quizzes?.length || 0,
+      courseLevelAssignments: (course as any)?.assignments?.length || 0,
+      allModules: processedModules.map(m => ({
+        moduleId: m.id || m._id,
+        title: m.title,
+        lessonsCount: m.lessons?.length || 0,
+        quizzesCount: m.quizzes?.length || 0,
+        assignmentsCount: m.assignments?.length || 0,
+        quizTitles: m.quizzes?.map(q => q.title) || [],
+        assignmentTitles: m.assignments?.map(a => a.title) || [],
+      })),
+      rawCourse: course ? {
+        hasQuizzes: !!(course as any)?.quizzes,
+        hasAssignments: !!(course as any)?.assignments,
+        modulesCount: course.modules?.length,
+      } : null,
     });
-  }, [courseId, lessonId, enrollmentsData, enrollment, course, modules]);
+  }, [courseId, lessonId, enrollmentsData, enrollment, course, processedModules]);
+
+  // Redirect to first lesson if no lessonId
+  useEffect(() => {
+    if (course && processedModules.length > 0 && !lessonId) {
+      const firstLessonIndex = 0;
+      navigate(`/learn/${courseId}/${firstLessonIndex}`, { replace: true });
+    }
+  }, [course, processedModules.length, lessonId, courseId, navigate]);
 
   // Flatten all lessons for navigation
-  const allLessons = modules.flatMap((module) => module.lessons);
+  const allLessons = processedModules.flatMap((module) => module.lessons);
   const currentLessonIndex = allLessons.findIndex((l, idx) => `${idx}` === lessonId);
   const currentLesson = currentLessonIndex >= 0 ? allLessons[currentLessonIndex] : (allLessons.length > 0 ? allLessons[0] : null);
 
@@ -546,7 +715,7 @@ export function CourseLearnPage() {
           {/* Module List */}
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-2">
-              {modules.map((module, moduleIndex) => (
+              {processedModules.map((module, moduleIndex) => (
                 <div key={module.id || moduleIndex} className="border rounded-lg overflow-hidden">
                   {/* Module Header */}
                   <button
@@ -567,6 +736,7 @@ export function CourseLearnPage() {
                   {/* Module Lessons */}
                   {expandedModules.has(moduleIndex) && (
                     <div className="divide-y">
+                      {/* Lessons */}
                       {module.lessons.map((lesson, lessonIndex) => {
                         // Calculate global lesson index
                         const lessonsBeforeThisModule = modules
@@ -574,7 +744,7 @@ export function CourseLearnPage() {
                           .reduce((sum, m) => sum + m.lessons.length, 0);
                         const globalLessonIndex = lessonsBeforeThisModule + lessonIndex;
                         const lessonIdentifier = `${globalLessonIndex}`;
-                        
+
                         const isCompleted = isLessonCompleted(globalLessonIndex);
                         const isCurrent = currentLessonIndex === globalLessonIndex;
 
@@ -621,6 +791,83 @@ export function CourseLearnPage() {
                           </Link>
                         );
                       })}
+
+                      {/* Quizzes */}
+                      {module.quizzes && module.quizzes.length > 0 && (
+                        <div className="pt-2 mt-2 border-t">
+                          <div className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Quizzes
+                          </div>
+                          {module.quizzes.map((quiz, quizIndex) => (
+                            <Link
+                              key={quiz._id || quizIndex}
+                              to={`/learn/${courseId}/quiz/${quiz._id || encodeURIComponent(quiz.title)}`}
+                              className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors border-l-2 border-transparent"
+                            >
+                              <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                <IconQuestionMark className="size-3" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm truncate">{quiz.title}</div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                  {quiz.questions?.length && (
+                                    <span>{quiz.questions.length} questions</span>
+                                  )}
+                                  {quiz.timeLimit && (
+                                    <span className="flex items-center gap-1">
+                                      <IconClock className="size-3" />
+                                      {quiz.timeLimit}m
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Assignments */}
+                      {module.assignments && module.assignments.length > 0 && (
+                        <div className="pt-2 mt-2 border-t">
+                          <div className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Assignments
+                          </div>
+                          {module.assignments.map((assignment, assignmentIndex) => {
+                            const isOverdue = assignment.dueDate && new Date() > new Date(assignment.dueDate);
+                            return (
+                              <Link
+                                key={assignment._id || assignmentIndex}
+                                to={`/learn/${courseId}/assignment/${assignment._id || encodeURIComponent(assignment.title)}`}
+                                className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors border-l-2 border-transparent"
+                              >
+                                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                  <IconClipboardCheck className="size-3" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm truncate">{assignment.title}</div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                    {assignment.maxScore && (
+                                      <span className="flex items-center gap-1">
+                                        <IconAward className="size-3" />
+                                        {assignment.maxScore} pts
+                                      </span>
+                                    )}
+                                    {assignment.dueDate && (
+                                      <span className={cn(
+                                        "flex items-center gap-1",
+                                        isOverdue ? "text-red-500" : ""
+                                      )}>
+                                        <IconClock className="size-3" />
+                                        {new Date(assignment.dueDate).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

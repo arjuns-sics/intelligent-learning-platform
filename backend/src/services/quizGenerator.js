@@ -1,10 +1,16 @@
 const { generateObject } = require("ai");
 const { createOpenRouter } = require("@openrouter/ai-sdk-provider");
 const { z } = require("zod");
+const {
+  processLessonTranscripts,
+  buildTranscriptContext,
+  extractKeyConcepts,
+} = require("./transcriptService");
 
 /**
  * Quiz Generator Service
  * Uses Vercel AI SDK with OpenRouter to generate quizzes from course content
+ * Enhanced with YouTube transcript integration for video content awareness
  */
 
 // Initialize OpenRouter provider
@@ -52,8 +58,44 @@ async function generateQuizzes({
   learningObjectives = [],
   numQuizzes = 1,
   questionsPerQuiz = 5,
+  includeTranscripts = true, // New option to enable transcript fetching
 }) {
   try {
+    // Collect all lessons from modules
+    const allLessons = modules.flatMap((module) =>
+      module.lessons?.map((lesson) => ({
+        ...lesson,
+        moduleId: module.id,
+        moduleTitle: module.title,
+      })) || []
+    );
+
+    // Fetch and process video transcripts
+    let transcriptContext = "";
+    let keyConcepts = [];
+    let transcriptMetadata = {
+      totalVideos: 0,
+      processedVideos: 0,
+      skippedVideos: 0,
+    };
+
+    if (includeTranscripts) {
+      console.log("Processing video transcripts for quiz generation...");
+      const processedTranscripts = await processLessonTranscripts(allLessons);
+      transcriptContext = buildTranscriptContext(processedTranscripts);
+      keyConcepts = await extractKeyConcepts(processedTranscripts);
+
+      transcriptMetadata = {
+        totalVideos: processedTranscripts.length,
+        processedVideos: processedTranscripts.filter((t) => !t.skipped).length,
+        skippedVideos: processedTranscripts.filter((t) => t.skipped).length,
+      };
+
+      console.log(
+        `Transcript processing complete: ${transcriptMetadata.processedVideos}/${transcriptMetadata.totalVideos} videos processed`
+      );
+    }
+
     // Build context from course content
     const modulesContext = modules
       .map(
@@ -70,6 +112,11 @@ ${module.lessons?.map((lesson, i) => `  ${i + 1}. ${lesson.title} - ${lesson.typ
       .map((obj, index) => `${index + 1}. ${obj}`)
       .join("\n");
 
+    // Build enhanced prompt with transcript context
+    const transcriptNote = includeTranscripts
+      ? `\n\nVIDEO CONTENT:\n${transcriptContext}\n\nKEY CONCEPTS FROM VIDEOS:\n${keyConcepts.length > 0 ? keyConcepts.map((c, i) => `${i + 1}. ${c}`).join("\n") : "No key concepts extracted."}`
+      : "";
+
     // Create the prompt
     const prompt = `You are an expert educational content creator. Generate a comprehensive quiz based on the following course content.
 
@@ -82,16 +129,17 @@ LEARNING OBJECTIVES:
 ${learningObjectivesContext}
 
 COURSE STRUCTURE:
-${modulesContext}
+${modulesContext}${transcriptNote}
 
 INSTRUCTIONS:
 - Generate ${numQuizzes} quiz(es) with ${questionsPerQuiz} questions each
-- Create a mix of multiple-choice and true/false questions
-- Questions should test understanding of key concepts from the course
+- Create a mix of multiple-choice (70%) and true/false (30%) questions
+- Questions should test understanding of key concepts from the course content AND video transcripts
 - For multiple-choice questions, provide 4 options with one correct answer
 - For true/false questions, provide ["True", "False"] as options
 - Ensure questions are clear, unambiguous, and educationally valuable
 - Distribute questions across different modules/topics
+- Prioritize important concepts mentioned in video transcripts
 - Set appropriate time limits (assume ~1 minute per question)
 - Set a reasonable passing score (70-80%)
 
@@ -121,6 +169,10 @@ Generate the quiz in the exact JSON schema provided.`;
     return {
       success: true,
       quizzes: generatedQuizzes,
+      metadata: {
+        transcriptsUsed: includeTranscripts,
+        ...transcriptMetadata,
+      },
     };
   } catch (error) {
     console.error("Quiz generation error:", error);
@@ -137,17 +189,34 @@ Generate the quiz in the exact JSON schema provided.`;
  * @param {string} params.courseTitle - Course title
  * @param {Object} params.module - Specific module
  * @param {number} params.numQuestions - Number of questions
+ * @param {boolean} params.includeTranscripts - Whether to include video transcripts
  * @returns {Promise<Object>} Generated quiz
  */
 async function generateQuizForModule({
   courseTitle,
   module,
   numQuestions = 5,
+  includeTranscripts = true,
 }) {
   try {
+    // Fetch and process video transcripts for this module
+    let transcriptContext = "";
+    let keyConcepts = [];
+
+    if (includeTranscripts && module.lessons?.length > 0) {
+      console.log(`Processing transcripts for module: ${module.title}`);
+      const processedTranscripts = await processLessonTranscripts(module.lessons);
+      transcriptContext = buildTranscriptContext(processedTranscripts);
+      keyConcepts = await extractKeyConcepts(processedTranscripts);
+    }
+
     const lessonsContext = module.lessons
       ?.map((lesson, index) => `${index + 1}. ${lesson.title} (${lesson.type})`)
       .join("\n") || "No lessons";
+
+    const transcriptNote = includeTranscripts && transcriptContext
+      ? `\n\n${transcriptContext}\n\nKEY CONCEPTS FROM VIDEOS:\n${keyConcepts.length > 0 ? keyConcepts.map((c, i) => `${i + 1}. ${c}`).join("\n") : "No key concepts extracted."}`
+      : "";
 
     const prompt = `You are an expert educational content creator. Generate a quiz for the following module.
 
@@ -157,14 +226,15 @@ MODULE: ${module.title}
 ${module.description || ""}
 
 LESSONS:
-${lessonsContext}
+${lessonsContext}${transcriptNote}
 
 INSTRUCTIONS:
 - Generate ${numQuestions} questions
 - Use a mix of multiple-choice (70%) and true/false (30%) questions
-- Questions should test understanding of the module content
+- Questions should test understanding of the module content AND video transcripts
 - For multiple-choice: provide 4 options with one correct answer
 - For true/false: provide ["True", "False"] as options
+- Prioritize important concepts from video transcripts
 - Set time limit to ${numQuestions} minutes
 - Set passing score to 75%
 
@@ -190,6 +260,9 @@ Generate the quiz in the exact JSON schema provided.`;
     return {
       success: true,
       quiz: generatedQuiz || null,
+      metadata: {
+        transcriptsUsed: includeTranscripts,
+      },
     };
   } catch (error) {
     console.error("Module quiz generation error:", error);

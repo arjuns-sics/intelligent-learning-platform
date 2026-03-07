@@ -6,6 +6,7 @@ const healthRoutes = require("./health")
 const authRoutes = require("./auth")
 const courseRoutes = require("./courses")
 const enrollmentRoutes = require("./enrollments")
+const quizAttemptRoutes = require("./quizAttempts")
 
 // API v1 routes
 router.get("/v1", (req, res) => {
@@ -43,6 +44,20 @@ router.get("/v1", (req, res) => {
         "complete-course": "/enrollments/:enrollmentId/complete (POST, requires Student role)",
         "drop-course": "/enrollments/:enrollmentId (DELETE, requires Student role)",
       },
+      quizzes: {
+        start: "/quizzes/:quizId/start (POST, start quiz attempt)",
+        submit: "/quizzes/attempts/:attemptId/submit (POST, submit answers)",
+        results: "/quizzes/attempts/:attemptId/results (GET, get results)",
+        "latest-attempt": "/quizzes/:quizId/attempts/latest (GET, resume quiz)",
+        "course-attempts": "/quizzes/course/:courseId/attempts (GET, all attempts)",
+      },
+      assignments: {
+        submit: "/assignments/:assignmentId/submit (POST, submit assignment)",
+        "submission-details": "/assignments/submissions/:submissionId (GET)",
+        "course-submissions": "/assignments/course/:courseId/submissions (GET)",
+        grade: "/assignments/submissions/:submissionId/grade (POST, instructor only)",
+        "assignment-submissions": "/assignments/:assignmentId/submissions (GET, instructor only)",
+      },
     },
   })
 })
@@ -58,5 +73,11 @@ router.use("/courses", courseRoutes)
 
 // Enrollment routes - mounted at /api/enrollments
 router.use("/enrollments", enrollmentRoutes)
+
+// Quiz attempt routes - mounted at /api/quizzes
+router.use("/quizzes", quizAttemptRoutes)
+
+// Assignment routes are also in quizAttempts router
+router.use("/assignments", quizAttemptRoutes)
 
 module.exports = router

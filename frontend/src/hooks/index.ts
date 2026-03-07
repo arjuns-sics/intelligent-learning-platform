@@ -78,3 +78,15 @@ export {
   usePublishCourse,
   useDeleteCourse,
 } from "./use-queries"
+
+// Quiz and Assignment submission hooks
+export {
+  useStartQuiz,
+  useSubmitQuiz,
+  useGetQuizResults,
+  useGetLatestAttempt,
+  useGetCourseQuizAttempts,
+  useSubmitAssignment,
+  useGetSubmission,
+  useGetCourseSubmissions,
+} from "./use-submissions"

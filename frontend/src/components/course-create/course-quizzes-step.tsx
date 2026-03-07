@@ -3,7 +3,7 @@
  * Third step - create and manage quizzes for the course
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,7 @@ import {
     IconSparkles,
     IconX,
     IconLoader2,
+    IconBook,
 } from "@tabler/icons-react";
 import type { CourseFormData, Quiz, QuizQuestion } from "@/pages/course-create-page";
 import { useGenerateQuizzes } from "@/hooks/use-queries";
@@ -75,7 +76,61 @@ export function CourseQuizzesStep({
     const [aiQuizModuleId, setAiQuizModuleId] = useState<string>("all");
     const [aiNumQuizzes, setAiNumQuizzes] = useState(1);
     const [aiQuestionsPerQuiz, setAiQuestionsPerQuiz] = useState(5);
+    const [includeTranscripts, setIncludeTranscripts] = useState(true);
+    const [generationMetadata, setGenerationMetadata] = useState<{
+        transcriptsUsed?: boolean;
+        totalVideos?: number;
+        processedVideos?: number;
+        skippedVideos?: number;
+    } | null>(null);
+    const [generationStep, setGenerationStep] = useState<string>("");
     const generateQuizzesMutation = useGenerateQuizzes();
+
+    // Reset metadata when dialog is closed
+    useEffect(() => {
+        if (!isAiDialogOpen) {
+            setGenerationMetadata(null);
+            setGenerationStep("");
+        }
+    }, [isAiDialogOpen]);
+
+    // Update generation step based on mutation state and time elapsed
+    useEffect(() => {
+        if (generateQuizzesMutation.isPending) {
+            if (includeTranscripts) {
+                // Show progressive steps for transcript processing
+                const startTime = Date.now();
+                const elapsed = Date.now() - startTime;
+                
+                if (elapsed < 10000) {
+                    setGenerationStep("📥 Fetching video transcripts...");
+                } else if (elapsed < 20000) {
+                    setGenerationStep("📝 Summarizing long transcripts...");
+                } else if (elapsed < 30000) {
+                    setGenerationStep("💡 Extracting key concepts from videos...");
+                } else {
+                    setGenerationStep("🤖 Generating quiz questions with AI...");
+                }
+
+                // Update step every 10 seconds
+                const interval = setInterval(() => {
+                    const now = Date.now();
+                    const total = now - startTime;
+                    if (total < 20000) {
+                        setGenerationStep("📝 Summarizing long transcripts...");
+                    } else if (total < 30000) {
+                        setGenerationStep("💡 Extracting key concepts from videos...");
+                    } else {
+                        setGenerationStep("🤖 Generating quiz questions with AI...");
+                    }
+                }, 10000);
+
+                return () => clearInterval(interval);
+            } else {
+                setGenerationStep("🤖 Generating quizzes with AI...");
+            }
+        }
+    }, [generateQuizzesMutation.isPending, includeTranscripts]);
 
     const handleAddQuiz = () => {
         const newQuiz: Quiz = {
@@ -169,11 +224,17 @@ export function CourseQuizzesStep({
                 numQuizzes: aiQuizModuleId === "all" ? aiNumQuizzes : 1,
                 questionsPerQuiz: aiQuestionsPerQuiz,
                 moduleId: aiQuizModuleId === "all" ? undefined : aiQuizModuleId,
+                includeTranscripts: includeTranscripts,
             };
 
             const result = await generateQuizzesMutation.mutateAsync(generationData);
 
             if (result.data?.quizzes) {
+                // Store metadata
+                if (result.data.metadata) {
+                    setGenerationMetadata(result.data.metadata);
+                }
+
                 // Add generated quizzes to form data
                 const newQuizzes = result.data.quizzes.map((quiz) => ({
                     ...quiz,
@@ -188,11 +249,16 @@ export function CourseQuizzesStep({
                     quizzes: [...formData.quizzes, ...newQuizzes],
                 });
 
+                // Show enhanced success message with transcript info
+                const transcriptMsg = result.data.metadata?.transcriptsUsed
+                    ? ` using ${result.data.metadata.processedVideos}/${result.data.metadata.totalVideos} video transcripts`
+                    : "";
+                
                 toast.success(
                     `Generated ${newQuizzes.length} quiz(es) with ${newQuizzes.reduce(
                         (acc, q) => acc + q.questions.length,
                         0
-                    )} questions`
+                    )} questions${transcriptMsg}`
                 );
                 setIsAiDialogOpen(false);
             }
@@ -674,7 +740,7 @@ export function CourseQuizzesStep({
 
             {/* AI Quiz Generation Dialog */}
             <AlertDialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
-                <AlertDialogContent className="max-w-lg">
+                <AlertDialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
                             <IconSparkles className="size-5 text-primary" />
@@ -747,6 +813,40 @@ export function CourseQuizzesStep({
                             </p>
                         </div>
 
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label>Include Video Transcripts</Label>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIncludeTranscripts(!includeTranscripts)}
+                                    className={`h-6 ${includeTranscripts ? "bg-primary text-primary-foreground" : ""}`}
+                                >
+                                    {includeTranscripts ? "Enabled" : "Disabled"}
+                                </Button>
+                            </div>
+                            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                                {includeTranscripts ? (
+                                    <>
+                                        <IconCircleCheck className="size-3 text-green-500 mt-0.5" />
+                                        <span>
+                                            AI will analyze YouTube video transcripts to create more relevant questions.
+                                            {formData.modules.some(m => m.lessons?.some(l => l.type === "video" && l.videoUrl)) && (
+                                                <span className="block mt-1">
+                                                    Found {formData.modules.reduce((acc, m) => acc + (m.lessons?.filter(l => l.type === "video" && l.videoUrl).length || 0), 0)} video(s) in this course.
+                                                </span>
+                                            )}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <IconCircleX className="size-3 text-amber-500 mt-0.5" />
+                                        <span>AI will only use course titles, descriptions, and learning objectives</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
                         <Card className="bg-muted/50">
                             <CardContent className="p-3 text-sm">
                                 <div className="flex items-start gap-2">
@@ -755,13 +855,71 @@ export function CourseQuizzesStep({
                                         <p className="font-medium">AI Quiz Generation</p>
                                         <p className="text-muted-foreground text-xs">
                                             Uses Meta's Llama 3 model via OpenRouter to generate
-                                            relevant multiple-choice and true/false questions
-                                            based on your course content.
+                                            relevant multiple-choice and true/false questions.
+                                            {includeTranscripts && (
+                                                <span className="block mt-1">
+                                                    Video transcripts are automatically summarized to fit context limits while preserving key concepts.
+                                                </span>
+                                            )}
                                         </p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {generationMetadata && (
+                            <Card className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
+                                <CardContent className="p-3 text-sm">
+                                    <div className="flex items-start gap-2">
+                                        <IconCircleCheck className="size-4 text-green-600 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="font-medium text-green-800 dark:text-green-200">Transcript Processing Complete</p>
+                                            <div className="grid grid-cols-3 gap-2 text-xs text-green-700 dark:text-green-300">
+                                                <div className="text-center">
+                                                    <p className="font-semibold">{generationMetadata.totalVideos}</p>
+                                                    <p className="text-muted-foreground">Total Videos</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="font-semibold">{generationMetadata.processedVideos}</p>
+                                                    <p className="text-muted-foreground">Processed</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="font-semibold">{generationMetadata.skippedVideos || 0}</p>
+                                                    <p className="text-muted-foreground">Skipped</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {generateQuizzesMutation.isPending && (
+                            <Card className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+                                <CardContent className="p-4 text-sm">
+                                    <div className="flex items-center gap-3">
+                                        <IconLoader2 className="size-5 text-blue-600 animate-spin" />
+                                        <div className="flex-1">
+                                            <p className="font-medium text-blue-800 dark:text-blue-200">
+                                                {generationStep || "Generating quizzes..."}
+                                            </p>
+                                            <div className="mt-2 space-y-1">
+                                                <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                                                    <IconSparkles className="size-3" />
+                                                    <span>This may take 1-2 minutes depending on video content</span>
+                                                </div>
+                                                {includeTranscripts && (
+                                                    <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                                                        <IconBook className="size-3" />
+                                                        <span>Fetching transcripts → Summarizing → Extracting concepts → Generating questions</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
