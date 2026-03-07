@@ -854,7 +854,7 @@ export function CourseQuizzesStep({
                                     <div className="space-y-1">
                                         <p className="font-medium">AI Quiz Generation</p>
                                         <p className="text-muted-foreground text-xs">
-                                            Uses Meta's Llama 3 model via OpenRouter to generate
+                                            Uses AI models to generate
                                             relevant multiple-choice and true/false questions.
                                             {includeTranscripts && (
                                                 <span className="block mt-1">

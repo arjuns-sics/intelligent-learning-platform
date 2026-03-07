@@ -107,7 +107,7 @@ Provide a well-structured summary that highlights:
 4. Any conclusions or key takeaways`;
 
     const result = await generateText({
-      model: openrouter("meta-llama/llama-3-8b-instruct:free"),
+      model: openrouter("openrouter/free"),
       prompt: prompt,
       temperature: 0.5,
       maxTokens: Math.min(targetLength / 4, 1000),
@@ -252,7 +252,7 @@ ${combinedTranscripts.slice(0, MAX_TOTAL_TRANSCRIPT_LENGTH)}
 Provide a list of 10-20 key points that students should understand after watching these videos.`;
 
     const result = await generateText({
-      model: openrouter("meta-llama/llama-3-8b-instruct:free"),
+      model: openrouter("openrouter/free"),
       prompt: prompt,
       temperature: 0.5,
       maxTokens: 1000,
