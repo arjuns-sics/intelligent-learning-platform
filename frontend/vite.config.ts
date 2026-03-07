@@ -18,4 +18,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  base: "/intelligent-learning/",
+  build: {
+    outDir: "dist",
+    sourcemap: false,
+    minify: "esbuild",
+  },
 })

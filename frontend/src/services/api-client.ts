@@ -3,7 +3,8 @@
  * Handles HTTP requests with automatic token injection and error handling
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+// Use relative URL for subdirectory deployment
+const API_BASE_URL = "/intelligent-learning/api";
 
 // Token storage keys
 const TOKEN_KEY = "learnify_token";
