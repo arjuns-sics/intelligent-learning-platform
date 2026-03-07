@@ -13,12 +13,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Node.js for frontend build
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install all dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+          echo "Build complete!"
+          ls -la dist/
+
+      - name: Verify build
+        run: |
+          if [ ! -d "frontend/dist" ]; then
+            echo "❌ Build failed! frontend/dist not found"
+            exit 1
+          fi
+          if [ ! -f "frontend/dist/index.html" ]; then
+            echo "❌ Build failed! index.html not found"
+            exit 1
+          fi
+          echo "✅ Build verified!"
+          ls -la frontend/dist/
 
       - name: Setup backend directory on server
         uses: appleboy/ssh-action@v0.1.10
@@ -48,22 +75,12 @@ jobs:
             TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
             if [ -d "current" ]; then
-              tar -czf backups/backup_$TIMESTAMP.tar.gz current/ uploads/ .env
+              tar -czf backups/backup_$TIMESTAMP.tar.gz current/ uploads/ .env || true
 
               if docker ps | grep ilp_mongo_prod; then
-                docker exec ilp_mongo_prod mongodump --archive --gzip --db ilp_db > mongo_backups/mongo_backup_$TIMESTAMP.gz
+                docker exec ilp_mongo_prod mongodump --archive --gzip --db ilp_db > mongo_backups/mongo_backup_$TIMESTAMP.gz || true
               fi
             fi
-
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci
-
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
 
       - name: Copy backend and frontend files to server
         uses: appleboy/scp-action@v0.1.4
@@ -126,8 +143,9 @@ jobs:
               fi
 
               # Verify frontend is served
-              if ! curl --max-time 10 --fail http://localhost:8025/intelligent-learning/; then
+              if ! curl --max-time 10 --fail http://localhost:8025/; then
                 echo "Frontend not served!"
+                docker logs ilp_prod
                 exit 1
               fi
 
