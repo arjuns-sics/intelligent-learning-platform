@@ -179,6 +179,20 @@ export interface UpdateCourseData extends Partial<CreateCourseData> {
   published?: boolean;
 }
 
+export interface GenerateQuizzesData {
+  courseTitle: string;
+  courseDescription: string;
+  modules?: Module[];
+  learningObjectives?: string[];
+  numQuizzes?: number;
+  questionsPerQuiz?: number;
+  moduleId?: string;
+}
+
+export interface GenerateQuizzesResponse {
+  quizzes: Quiz[];
+}
+
 export interface CoursesResponse {
   courses: Course[];
   pagination: {
@@ -306,6 +320,15 @@ export async function deleteCourse(courseId: string): Promise<ApiResponse<null>>
   return apiClient.delete<null>(`/courses/${courseId}`);
 }
 
+/**
+ * Generate quizzes using AI
+ */
+export async function generateQuizzes(
+  data: GenerateQuizzesData
+): Promise<ApiResponse<GenerateQuizzesResponse>> {
+  return apiClient.post<GenerateQuizzesResponse>("/courses/generate-quizzes", data);
+}
+
 // Export types for use in components
 export type {
   Lesson,
@@ -316,4 +339,6 @@ export type {
   CreateCourseData,
   UpdateCourseData,
   CoursesResponse,
+  GenerateQuizzesData,
+  GenerateQuizzesResponse,
 };

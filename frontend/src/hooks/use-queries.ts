@@ -11,6 +11,7 @@ import {
   saveDraft,
   publishCourse,
   deleteCourse,
+  generateQuizzes,
   type CreateCourseData,
   type UpdateCourseData,
   type Course,
@@ -19,6 +20,8 @@ import {
   type BrowseCoursesResponse,
   type BrowseCourse,
   type CategoryInfo,
+  type GenerateQuizzesData,
+  type GenerateQuizzesResponse,
 } from "@/services/course.service"
 
 // Example API functions - replace with actual API calls
@@ -203,5 +206,14 @@ export function useDeleteCourse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courses", "instructor"] })
     },
+  })
+}
+
+/**
+ * Generate quizzes using AI
+ */
+export function useGenerateQuizzes() {
+  return useMutation({
+    mutationFn: (data: GenerateQuizzesData) => generateQuizzes(data),
   })
 }

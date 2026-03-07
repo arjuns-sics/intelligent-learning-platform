@@ -13,6 +13,7 @@ const {
   deleteCourse,
   getCourseForLearning,
 } = require("../controllers/courseController")
+const { generateQuizzesController } = require("../controllers/quizController")
 const { authenticate, authorize, optionalAuth } = require("../middleware/auth")
 
 /**
@@ -94,5 +95,12 @@ router.post("/:id/publish", authorize("Instructor", "Admin"), publishCourse)
  * @access  Private (Instructor/Admin - course owner only)
  */
 router.delete("/:id", authorize("Instructor", "Admin"), deleteCourse)
+
+/**
+ * @route   POST /api/courses/generate-quizzes
+ * @desc    Generate quizzes using AI
+ * @access  Private (Instructor)
+ */
+router.post("/generate-quizzes", authorize("Instructor", "Admin"), generateQuizzesController)
 
 module.exports = router

@@ -30,8 +30,24 @@ import {
     IconChevronDown,
     IconChevronUp,
     IconAlertCircle,
+    IconSparkles,
+    IconX,
+    IconLoader2,
 } from "@tabler/icons-react";
 import type { CourseFormData, Quiz, QuizQuestion } from "@/pages/course-create-page";
+import { useGenerateQuizzes } from "@/hooks/use-queries";
+import { toast } from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface CourseQuizzesStepProps {
     formData: CourseFormData;
@@ -53,6 +69,13 @@ export function CourseQuizzesStep({
     const [editingQuizId, setEditingQuizId] = useState<string | null>(null);
     const [quizFormData, setQuizFormData] = useState<Partial<Quiz>>({});
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+    
+    // AI Quiz generation state
+    const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+    const [aiQuizModuleId, setAiQuizModuleId] = useState<string>("all");
+    const [aiNumQuizzes, setAiNumQuizzes] = useState(1);
+    const [aiQuestionsPerQuiz, setAiQuestionsPerQuiz] = useState(5);
+    const generateQuizzesMutation = useGenerateQuizzes();
 
     const handleAddQuiz = () => {
         const newQuiz: Quiz = {
@@ -131,26 +154,90 @@ export function CourseQuizzesStep({
         }
     };
 
+    const handleAiGenerateQuizzes = async () => {
+        if (!formData.title || !formData.description) {
+            toast.error("Please fill in course title and description first");
+            return;
+        }
+
+        try {
+            const generationData = {
+                courseTitle: formData.title,
+                courseDescription: formData.description,
+                modules: formData.modules,
+                learningObjectives: formData.learningObjectives,
+                numQuizzes: aiQuizModuleId === "all" ? aiNumQuizzes : 1,
+                questionsPerQuiz: aiQuestionsPerQuiz,
+                moduleId: aiQuizModuleId === "all" ? undefined : aiQuizModuleId,
+            };
+
+            const result = await generateQuizzesMutation.mutateAsync(generationData);
+
+            if (result.data?.quizzes) {
+                // Add generated quizzes to form data
+                const newQuizzes = result.data.quizzes.map((quiz) => ({
+                    ...quiz,
+                    id: generateId(),
+                    questions: quiz.questions.map((q) => ({
+                        ...q,
+                        id: generateId(),
+                    })),
+                }));
+
+                updateFormData({
+                    quizzes: [...formData.quizzes, ...newQuizzes],
+                });
+
+                toast.success(
+                    `Generated ${newQuizzes.length} quiz(es) with ${newQuizzes.reduce(
+                        (acc, q) => acc + q.questions.length,
+                        0
+                    )} questions`
+                );
+                setIsAiDialogOpen(false);
+            }
+        } catch (error) {
+            console.error("Failed to generate quizzes:", error);
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to generate quizzes. Please try again."
+            );
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Section Header */}
-            <div className="flex items-center gap-4 pb-4 border-b">
-                <div className="w-12 h-12 rounded-xl bg-linear-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
-                    <IconQuestionMark className="size-6 text-white" />
+            <div className="flex items-center justify-between pb-4 border-b">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
+                        <IconQuestionMark className="size-6 text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-semibold">Quizzes & Assessments</h2>
+                        <p className="text-sm text-muted-foreground">
+                            Create quizzes to test student knowledge
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <h2 className="text-xl font-semibold">Quizzes & Assessments</h2>
-                    <p className="text-sm text-muted-foreground">
-                        Create quizzes to test student knowledge
-                    </p>
-                </div>
+                <Button
+                    variant="outline"
+                    onClick={() => setIsAiDialogOpen(true)}
+                    className="gap-2 border-primary/50 text-primary hover:bg-primary/10"
+                >
+                    <IconSparkles className="size-4" />
+                    Generate with AI
+                </Button>
             </div>
 
             {/* Add Quiz Button */}
-            <Button onClick={handleAddQuiz} className="gap-2">
-                <IconPlus className="size-4" />
-                Create Quiz
-            </Button>
+            <div className="flex gap-2">
+                <Button onClick={handleAddQuiz} className="gap-2">
+                    <IconPlus className="size-4" />
+                    Create Quiz Manually
+                </Button>
+            </div>
 
             {/* Quizzes List */}
             {formData.quizzes.length === 0 ? (
@@ -160,9 +247,20 @@ export function CourseQuizzesStep({
                     <p className="text-muted-foreground text-sm mb-4">
                         Create quizzes to assess student understanding
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                        Quizzes help reinforce learning and track progress
-                    </p>
+                    <div className="flex gap-2 justify-center">
+                        <Button onClick={handleAddQuiz} className="gap-2">
+                            <IconPlus className="size-4" />
+                            Create Manually
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsAiDialogOpen(true)}
+                            className="gap-2"
+                        >
+                            <IconSparkles className="size-4" />
+                            Generate with AI
+                        </Button>
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-4">
@@ -573,6 +671,120 @@ export function CourseQuizzesStep({
                     </div>
                 </div>
             )}
+
+            {/* AI Quiz Generation Dialog */}
+            <AlertDialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+                <AlertDialogContent className="max-w-lg">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <IconSparkles className="size-5 text-primary" />
+                            Generate Quizzes with AI
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Let AI create quizzes based on your course content. The generated
+                            quizzes will be added to your existing quizzes.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Generate for</Label>
+                            <Select
+                                value={aiQuizModuleId}
+                                onValueChange={setAiQuizModuleId}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select modules" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All course content</SelectItem>
+                                    {formData.modules.map((module) => (
+                                        <SelectItem key={module.id} value={module.id}>
+                                            {module.title}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                                {aiQuizModuleId === "all"
+                                    ? "Generate quizzes covering all modules"
+                                    : `Generate a quiz for "${formData.modules.find(
+                                          (m) => m.id === aiQuizModuleId
+                                      )?.title}"`}
+                            </p>
+                        </div>
+
+                        {aiQuizModuleId === "all" && (
+                            <div className="space-y-2">
+                                <Label>Number of Quizzes</Label>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    max={10}
+                                    value={aiNumQuizzes}
+                                    onChange={(e) =>
+                                        setAiNumQuizzes(parseInt(e.target.value) || 1)
+                                    }
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Generate 1-10 quizzes (recommended: 1 per module)
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            <Label>Questions per Quiz</Label>
+                            <Input
+                                type="number"
+                                min={1}
+                                max={20}
+                                value={aiQuestionsPerQuiz}
+                                onChange={(e) =>
+                                    setAiQuestionsPerQuiz(parseInt(e.target.value) || 5)
+                                }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Generate 1-20 questions per quiz (recommended: 5-10)
+                            </p>
+                        </div>
+
+                        <Card className="bg-muted/50">
+                            <CardContent className="p-3 text-sm">
+                                <div className="flex items-start gap-2">
+                                    <IconSparkles className="size-4 text-primary mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="font-medium">AI Quiz Generation</p>
+                                        <p className="text-muted-foreground text-xs">
+                                            Uses Meta's Llama 3 model via OpenRouter to generate
+                                            relevant multiple-choice and true/false questions
+                                            based on your course content.
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleAiGenerateQuizzes}
+                            disabled={generateQuizzesMutation.isPending}
+                            className="gap-2 bg-primary hover:bg-primary/90"
+                        >
+                            {generateQuizzesMutation.isPending ? (
+                                <>
+                                    <IconLoader2 className="size-4 animate-spin" />
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <IconSparkles className="size-4" />
+                                    Generate Quizzes
+                                </>
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
