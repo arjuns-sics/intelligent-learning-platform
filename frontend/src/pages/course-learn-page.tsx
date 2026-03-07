@@ -23,16 +23,11 @@ import {
   IconClock,
   IconFileText,
   IconPlayerPlay,
-  IconRefresh,
   IconFile,
-  IconDownload,
-  IconExternalLink,
-  IconAward,
-  IconTrophy,
-  IconFlame,
   IconAlertCircle,
   IconQuestionMark,
   IconClipboardCheck,
+  IconFlame,
 } from "@tabler/icons-react";
 import { useMyEnrollments, useUpdateProgress } from "@/hooks";
 import { cn } from "@/lib/utils";
@@ -40,31 +35,26 @@ import { cn } from "@/lib/utils";
 // Helper function to get YouTube embed URL
 const getYouTubeEmbedUrl = (url: string): string => {
   if (!url) return "";
-  
+
   // Check if already an embed URL
   if (url.includes("youtube.com/embed/")) {
     return url;
   }
-  
+
   // Extract video ID from various YouTube URL formats
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
     /^([a-zA-Z0-9_-]{11})$/ // Just the video ID
   ];
-  
+
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) {
       return `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0&modestbranding=1`;
     }
   }
-  
-  return url;
-};
 
-// Helper function to get lesson unique identifier
-const getLessonId = (lesson: Lesson, index: number): string => {
-  return lesson.id || `lesson-${index}`;
+  return url;
 };
 
 // Types
@@ -119,16 +109,6 @@ interface Course {
   hasCertificate?: boolean;
 }
 
-interface Enrollment {
-  _id: string;
-  course: Course;
-  progress: number;
-  status: "active" | "completed" | "dropped";
-  completedLessons: string[];
-  completedModules: string[];
-  lastAccessedAt: string;
-}
-
 export function CourseLearnPage() {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
   const navigate = useNavigate();
@@ -142,7 +122,7 @@ export function CourseLearnPage() {
     (e) => e.course._id === courseId
   );
 
-  const course = enrollment?.course;
+  const course = enrollment?.course as any;
   const modules = course?.modules || [];
 
   // Simple debug - log on every render
@@ -158,23 +138,23 @@ export function CourseLearnPage() {
 
   // Distribute course-level quizzes to their respective modules based on moduleId
   const getProcessedModules = () => {
-    const courseQuizzes = (course as any)?.quizzes || [];
-    const courseAssignments = (course as any)?.assignments || [];
+    const courseQuizzes: any[] = (course as any)?.quizzes || [];
+    const courseAssignments: any[] = (course as any)?.assignments || [];
     
     console.log("Processing modules with quizzes:", {
       modulesCount: modules.length,
       courseQuizzesCount: courseQuizzes.length,
       courseAssignmentsCount: courseAssignments.length,
-      modules: modules.map(m => ({ id: m.id, _id: m._id, title: m.title })),
-      quizzes: courseQuizzes.map(q => ({ title: q.title, moduleId: q.moduleId })),
+      modules: modules.map((m: any) => ({ id: m.id, _id: m._id, title: m.title })),
+      quizzes: courseQuizzes.map((q: any) => ({ title: q.title, moduleId: q.moduleId })),
     });
     
     // Create a map of moduleId to quizzes/assignments
-    const quizzesByModule = {};
-    const assignmentsByModule = {};
+    const quizzesByModule: any = {};
+    const assignmentsByModule: any = {};
     
     // Distribute quizzes to their modules
-    courseQuizzes.forEach((quiz) => {
+    courseQuizzes.forEach((quiz: any) => {
       const moduleId = quiz.moduleId;
       console.log("Processing quiz:", quiz.title, "moduleId:", moduleId);
       if (moduleId) {
@@ -186,7 +166,7 @@ export function CourseLearnPage() {
     });
     
     // Distribute assignments to their modules
-    courseAssignments.forEach((assignment) => {
+    courseAssignments.forEach((assignment: any) => {
       const moduleId = assignment.moduleId;
       if (moduleId) {
         if (!assignmentsByModule[moduleId]) {
@@ -199,7 +179,7 @@ export function CourseLearnPage() {
     console.log("Quizzes by module:", quizzesByModule);
     
     // Map modules with their quizzes and assignments
-    return modules.map((module, moduleIndex) => {
+    return modules.map((module: any, moduleIndex: number) => {
       // Try multiple ID fields since modules might have id, _id, or neither
       const moduleId = module.id || module._id;
       const moduleIds = [module.id, module._id].filter(Boolean);
@@ -207,14 +187,14 @@ export function CourseLearnPage() {
       console.log("Processing module:", module.title, "moduleId:", moduleId, "allIds:", moduleIds, "index:", moduleIndex);
       
       // Find quizzes that match any of the module's IDs
-      let moduleQuizzes = module.quizzes || [];
-      let moduleAssignments = module.assignments || [];
+      let moduleQuizzes: any[] = module.quizzes || [];
+      let moduleAssignments: any[] = module.assignments || [];
       
       // If no quizzes in module, check if any course-level quizzes match this module
       if (moduleQuizzes.length === 0 && courseQuizzes.length > 0) {
         // First try to match by moduleId
         if (moduleIds.length > 0) {
-          moduleQuizzes = courseQuizzes.filter(q => {
+          moduleQuizzes = courseQuizzes.filter((q: any) => {
             const quizModuleId = q.moduleId;
             const matches = moduleIds.includes(quizModuleId);
             if (matches) {
@@ -227,13 +207,13 @@ export function CourseLearnPage() {
         // Fallback: If still no quizzes and this is the first module, assign quizzes that don't have a matching module
         if (moduleQuizzes.length === 0 && moduleIndex === 0) {
           // Find quizzes whose moduleId doesn't match any module
-          const allModuleIds = modules.flatMap(m => [m.id, m._id].filter(Boolean));
-          const unmatchedQuizzes = courseQuizzes.filter(q => {
+          const allModuleIds = modules.flatMap((m: any) => [m.id, m._id].filter(Boolean));
+          const unmatchedQuizzes = courseQuizzes.filter((q: any) => {
             const hasMatch = allModuleIds.includes(q.moduleId);
             return !hasMatch;
           });
           if (unmatchedQuizzes.length > 0) {
-            console.log("✓ Assigning unmatched quizzes to first module:", unmatchedQuizzes.map(q => q.title));
+            console.log("✓ Assigning unmatched quizzes to first module:", unmatchedQuizzes.map((q: any) => q.title));
             moduleQuizzes = unmatchedQuizzes;
           }
         }
@@ -242,11 +222,11 @@ export function CourseLearnPage() {
       // If no assignments in module, apply same logic
       if (moduleAssignments.length === 0 && courseAssignments.length > 0) {
         if (moduleIds.length > 0) {
-          moduleAssignments = courseAssignments.filter(a => moduleIds.includes(a.moduleId));
+          moduleAssignments = courseAssignments.filter((a: any) => moduleIds.includes(a.moduleId));
         }
         if (moduleAssignments.length === 0 && moduleIndex === 0) {
-          const allModuleIds = modules.flatMap(m => [m.id, m._id].filter(Boolean));
-          const unmatchedAssignments = courseAssignments.filter(a => !allModuleIds.includes(a.moduleId));
+          const allModuleIds = modules.flatMap((m: any) => [m.id, m._id].filter(Boolean));
+          const unmatchedAssignments = courseAssignments.filter((a: any) => !allModuleIds.includes(a.moduleId));
           moduleAssignments = unmatchedAssignments;
         }
       }

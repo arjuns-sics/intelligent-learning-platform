@@ -15,9 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   IconArrowLeft,
   IconUpload,
-  IconFile,
   IconLink,
-  IconCheck,
   IconAlertCircle,
   IconLoader2,
   IconClock,
@@ -319,26 +317,6 @@ export function AssignmentSubmissionPage() {
                       <IconLink className="size-3 mr-2" />
                       Add Link
                     </Button>
-                  </div>
-
-                  {/* File Upload (placeholder - would need actual file upload implementation) */}
-                  <div className="space-y-2">
-                    <Label>Attach Files (optional)</Label>
-                    <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                      <IconUpload className="size-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        Drag and drop files here or click to browse
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {assignment.fileTypes
-                          ? `Accepted: ${assignment.fileTypes.join(", ")}`
-                          : "Any file type"}
-                        {assignment.maxFileSize && ` • Max ${assignment.maxFileSize}MB`}
-                      </p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Note: File upload functionality coming soon. Please use links instead.
-                    </p>
                   </div>
 
                   {/* Submit Button */}

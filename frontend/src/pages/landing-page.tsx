@@ -5,8 +5,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   IconBook,
   IconBrain,
@@ -16,9 +16,9 @@ import {
   IconRocket,
   IconSparkles,
   IconArrowRight,
-  IconPlayerPlay,
   IconStar,
-} from "@tabler/icons-react"
+  IconCheck,
+} from "@tabler/icons-react";
 
 import { useNavigate } from "react-router-dom"
 
@@ -61,10 +61,6 @@ export function LandingPage() {
                 Start Learning Free
                 <IconArrowRight className="size-4" />
               </Button>
-              <Button variant="outline" size="lg" className="gap-2">
-                <IconPlayerPlay className="size-4" />
-                Watch Demo
-              </Button>
             </div>
 
             {/* Social Proof */}
@@ -98,12 +94,64 @@ export function LandingPage() {
                 <div className="size-3 rounded-full bg-yellow-500/60" />
                 <div className="size-3 rounded-full bg-green-500/60" />
               </div>
-              <div className="aspect-video bg-linear-to-br from-muted to-muted/50 flex items-center justify-center">
-                <div className="text-center p-8">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <IconBook className="size-8 text-primary" />
+              <div className="p-6 bg-linear-to-br from-muted to-muted/50">
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="col-span-2 space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-background border">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <IconBook className="size-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="h-3 w-32 bg-muted rounded mb-1" />
+                        <div className="h-2 w-20 bg-muted/50 rounded" />
+                      </div>
+                      <div className="h-8 w-20 bg-primary/10 rounded" />
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-background border">
+                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                        <IconCheck className="size-5 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="h-3 w-40 bg-muted rounded mb-1" />
+                        <div className="h-2 w-24 bg-muted/50 rounded" />
+                      </div>
+                      <div className="h-8 w-20 bg-green-500/20 rounded flex items-center justify-center">
+                        <IconCheck className="size-4 text-green-600" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-background border">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                        <IconBrain className="size-5 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="h-3 w-36 bg-muted rounded mb-1" />
+                        <div className="h-2 w-28 bg-muted/50 rounded" />
+                      </div>
+                      <div className="h-8 w-20 bg-amber-500/20 rounded" />
+                    </div>
                   </div>
-                  <p className="text-muted-foreground">Interactive Dashboard Preview</p>
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg bg-background border">
+                      <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
+                        <IconChartLine className="size-4 text-primary" />
+                      </div>
+                      <div className="h-6 w-12 bg-muted rounded mx-auto mb-1" />
+                      <div className="h-2 w-16 bg-muted/50 rounded mx-auto" />
+                    </div>
+                    <div className="p-3 rounded-lg bg-background border">
+                      <div className="h-2 w-full bg-muted rounded mb-1" />
+                      <div className="h-2 w-3/4 bg-muted rounded mb-1" />
+                      <div className="h-2 w-1/2 bg-muted rounded" />
+                    </div>
+                    <div className="p-3 rounded-lg bg-background border">
+                      <div className="flex -space-x-2 justify-center mb-2">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="w-6 h-6 rounded-full bg-primary/30 border-2 border-background" />
+                        ))}
+                      </div>
+                      <div className="h-2 w-20 bg-muted/50 rounded mx-auto" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

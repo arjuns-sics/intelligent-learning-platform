@@ -1,7 +1,6 @@
 /**
  * Student Dashboard Page
- * Dedicated dashboard for students with course progress,
- * learning analytics, and personalized recommendations
+ * Dedicated dashboard for students with course progress and learning analytics
  */
 
 import { useSearchParams, Link } from "react-router-dom";
@@ -42,14 +41,12 @@ import {
   IconBrain,
   IconMedal,
   IconAward,
-  IconSparkles,
   IconSchool,
-  IconSettings,
-  IconLogout,
   IconChevronRight,
   IconPlaylist,
   IconClipboardCheck,
   IconBulb,
+  IconLogout,
 } from "@tabler/icons-react";
 import { useAuth } from "@/hooks";
 import { useDashboardStats, useMyEnrollments } from "@/hooks";
@@ -460,30 +457,6 @@ export function StudentDashboardPage() {
             </div>
           </div>
 
-          {/* Recommended Courses - Show placeholder for now */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconSparkles className="size-5 text-amber-500" />
-                    Recommended for You
-                  </CardTitle>
-                  <CardDescription>Personalized course suggestions based on your learning</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <IconSparkles className="size-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">Course recommendations coming soon</p>
-                <Button variant="link" asChild>
-                  <Link to="/courses">Browse All Courses</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Learning Streak */}
           <Card>
             <CardHeader>
@@ -795,23 +768,6 @@ export function StudentDashboardPage() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Skills Progress - Placeholder */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <IconBrain className="size-5" />
-                Skills Progress
-              </CardTitle>
-              <CardDescription>Your proficiency in different areas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <IconBrain className="size-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">Skills analytics coming soon</p>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Quiz Performance */}
           <Card>
