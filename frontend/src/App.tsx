@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 
-import { LandingPage, LoginPage, SignupPage, ForgotPasswordPage, CourseCreatePage, CourseBrowsePage, CourseDetailPage, CourseEnrollPage, CourseEditPage, InstructorCourseViewPage, CourseLearnPage, CourseQuizPage, AssignmentSubmissionPage } from "@/pages"
+import { LandingPage, LoginPage, SignupPage, ForgotPasswordPage, CourseCreatePage, CourseBrowsePage, CourseDetailPage, CourseEnrollPage, CourseEditPage, InstructorCourseViewPage, CourseLearnPage, CourseQuizPage, AssignmentSubmissionPage, AdminUsersPage, AdminCoursesPage } from "@/pages"
 import { Layout } from "./components/layout"
 import { ProtectedRoute } from "./components/protected-route"
 import { DashboardRouter } from "./components/dashboard-router"
@@ -25,6 +25,25 @@ export function App() {
           element={
             <ProtectedRoute>
               <DashboardRouter />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin routes */}
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requiredRole="Admin">
+              <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/courses"
+          element={
+            <ProtectedRoute requiredRole="Admin">
+              <AdminCoursesPage />
             </ProtectedRoute>
           }
         />

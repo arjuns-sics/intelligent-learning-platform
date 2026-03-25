@@ -7,6 +7,7 @@ const authRoutes = require("./auth")
 const courseRoutes = require("./courses")
 const enrollmentRoutes = require("./enrollments")
 const quizAttemptRoutes = require("./quizAttempts")
+const adminRoutes = require("./admin")
 
 // API v1 routes
 router.get("/v1", (req, res) => {
@@ -58,6 +59,17 @@ router.get("/v1", (req, res) => {
         grade: "/assignments/submissions/:submissionId/grade (POST, instructor only)",
         "assignment-submissions": "/assignments/:assignmentId/submissions (GET, instructor only)",
       },
+      admin: {
+        stats: "/admin/stats (GET, Admin only)",
+        users: "/admin/users (GET, Admin only)",
+        "user-details": "/admin/users/:id (GET, Admin only)",
+        "update-role": "/admin/users/:id/role (PUT, Admin only)",
+        "delete-user": "/admin/users/:id (DELETE, Admin only)",
+        courses: "/admin/courses (GET, Admin only)",
+        "course-details": "/admin/courses/:id (GET, Admin only)",
+        "update-status": "/admin/courses/:id/status (PUT, Admin only)",
+        "delete-course": "/admin/courses/:id (DELETE, Admin only)",
+      },
     },
   })
 })
@@ -79,5 +91,8 @@ router.use("/quizzes", quizAttemptRoutes)
 
 // Assignment routes are also in quizAttempts router
 router.use("/assignments", quizAttemptRoutes)
+
+// Admin routes - mounted at /api/admin
+router.use("/admin", adminRoutes)
 
 module.exports = router

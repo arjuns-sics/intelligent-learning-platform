@@ -104,7 +104,46 @@ const login = async (req, res) => {
       })
     }
 
-    // Find user
+    // Check for hardcoded admin credentials
+    const ADMIN_EMAIL = "admin@gmail.com"
+    const ADMIN_PASSWORD = "admin@123"
+
+    if (email.toLowerCase() === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      // Create admin user object for hardcoded credentials
+      const adminUser = {
+        _id: "admin_hardcoded_id",
+        name: "System Administrator",
+        email: ADMIN_EMAIL,
+        role: "Admin",
+        profile_image: null,
+        preferredMedia: null,
+        masteryScore: 0,
+        weaknessTags: [],
+        createdAt: new Date(),
+      }
+
+      // Generate token for admin
+      const token = jwt.sign(
+        {
+          _id: adminUser._id,
+          email: adminUser.email,
+          role: adminUser.role,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRE || "7d" }
+      )
+
+      return res.status(200).json({
+        success: true,
+        message: "Admin login successful",
+        data: {
+          user: adminUser,
+          token,
+        },
+      })
+    }
+
+    // Find user from database
     const user = await User.findOne({ email: email.toLowerCase() })
     if (!user) {
       return res.status(401).json({
