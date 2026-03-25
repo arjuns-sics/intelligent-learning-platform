@@ -38,14 +38,11 @@ import {
   IconCheck,
   IconArrowRight,
   IconFlame,
-  IconBrain,
-  IconMedal,
-  IconAward,
   IconSchool,
   IconChevronRight,
   IconPlaylist,
   IconClipboardCheck,
-  IconBulb,
+  IconSettings,
   IconLogout,
 } from "@tabler/icons-react";
 import { useAuth } from "@/hooks";
@@ -482,10 +479,10 @@ export function StudentDashboardPage() {
                     <div key={index} className="flex flex-col items-center gap-1">
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center ${day.hours > 0
-                            ? day.hours >= 2
-                              ? "bg-green-500 text-white"
-                              : "bg-green-200 dark:bg-green-900 text-green-700 dark:text-green-300"
-                            : "bg-muted"
+                          ? day.hours >= 2
+                            ? "bg-green-500 text-white"
+                            : "bg-green-200 dark:bg-green-900 text-green-700 dark:text-green-300"
+                          : "bg-muted"
                           }`}
                       >
                         {day.hours > 0 && <IconCheck className="size-4" />}
@@ -752,8 +749,8 @@ export function StudentDashboardPage() {
                         <Progress
                           value={course.progress}
                           className={`h-2 ${course.progress >= 75 ? "[&>div]:bg-green-500" :
-                              course.progress >= 50 ? "[&>div]:bg-blue-500" :
-                                course.progress >= 25 ? "[&>div]:bg-amber-500" : ""
+                            course.progress >= 50 ? "[&>div]:bg-blue-500" :
+                              course.progress >= 25 ? "[&>div]:bg-amber-500" : ""
                             }`}
                         />
                       </div>
