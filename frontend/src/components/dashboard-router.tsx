@@ -6,6 +6,7 @@
 import { useAuth } from "@/hooks";
 import { StudentDashboardPage } from "@/pages/student-dashboard-page";
 import { InstructorDashboardPage } from "@/pages/instructor-dashboard-page";
+import { AdminDashboardPage } from "@/pages/admin-dashboard-page";
 
 export function DashboardRouter() {
   const { role, isLoading } = useAuth();
@@ -26,11 +27,9 @@ export function DashboardRouter() {
 
   // Route to appropriate dashboard based on role
   switch (role) {
-    case "Instructor":
-      return <InstructorDashboardPage />;
     case "Admin":
-      // For now, admins see the instructor dashboard
-      // This can be changed to an AdminDashboardPage when created
+      return <AdminDashboardPage />;
+    case "Instructor":
       return <InstructorDashboardPage />;
     case "Student":
     default:
