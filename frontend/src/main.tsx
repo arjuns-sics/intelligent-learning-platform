@@ -15,10 +15,13 @@ const queryClient = new QueryClient({
   },
 })
 
+// Base path for subdirectory deployment
+const BASE_PATH = "/intelligent-learning"
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={BASE_PATH}>
         <App />
       </BrowserRouter>
     </QueryClientProvider>

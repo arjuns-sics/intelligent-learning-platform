@@ -7,7 +7,9 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
-    "build": "npm run build --workspace=frontend",
+    "build": "npm run build --workspace=frontend && ./build.sh",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:deploy": "./build.sh",
     "start": "npm run start --workspace=backend",
     "install:all": "npm install && npm install --workspace=frontend --workspace=backend"
   },

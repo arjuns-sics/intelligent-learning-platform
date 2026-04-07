@@ -24,4 +24,10 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
     css: true,
   },
+  base: "/intelligent-learning/",
+  build: {
+    outDir: "dist",
+    sourcemap: false,
+    minify: "esbuild",
+  },
 })
